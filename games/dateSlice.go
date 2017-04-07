@@ -1,6 +1,10 @@
 package main
 
-import "time"
+import (
+	"fmt"
+	"math"
+	"time"
+)
 
 /*
 Sometimes you need a slice of dates.  Here are some functions that make that
@@ -62,4 +66,45 @@ NextWeek returns a slice containing all dates that will occur next week (Sunday 
 */
 func NextWeek() []time.Time {
 	return aWeek(time.Now().AddDate(0, 0, 7))
+}
+
+func aMonth(baseDate time.Time) []time.Time {
+	// This is used for subtraction, so the first day of the month needs to be a 0 instead of a 1
+	dom := baseDate.Day() - 1
+
+	//reset the base date to the 1st of the month
+	baseDate = baseDate.AddDate(0, 0, 0-int(dom))
+
+	firstOfNextMonth := baseDate.AddDate(0, 1, 0)
+	daysInThisMonth := firstOfNextMonth.Sub(baseDate).Hours() / 24.0
+	fmt.Printf("%f days in the month\n", math.Ceil(daysInThisMonth))
+
+	ds := make([]time.Time, int(math.Ceil(daysInThisMonth)))
+
+	for i := range ds {
+		ds[i] = baseDate.AddDate(0, 0, i)
+	}
+
+	return ds
+}
+
+/*
+ThisMonth returns a slice containing all dates that occur this month
+*/
+func ThisMonth() []time.Time {
+	return aMonth(time.Now())
+}
+
+/*
+LastMonth returns a slice containing all dates that occured last month
+*/
+func LastMonth() []time.Time {
+	return aMonth(time.Now().AddDate(0, -1, 0))
+}
+
+/*
+NextMonth returns a slice containing all dates that will occur next month
+*/
+func NextMonth() []time.Time {
+	return aMonth(time.Now().AddDate(0, 1, 0))
 }
