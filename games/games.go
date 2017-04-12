@@ -31,6 +31,11 @@ func main() {
 
 	cache := FSCache{}
 	cache.SetBaseURL("http://gd2.mlb.com/components/game/mlb/")
+	url := LocalURL{}
+	url.SetBaseURL("http://gd2.mlb.com/components/game/mlb/")
+
+	ds := LastWeek()
+	url.GetURLsForDates(ds)
 
 	fmt.Printf("Games for %s\n", *datePtr)
 }
