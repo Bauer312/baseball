@@ -12,7 +12,7 @@ GameURL is an interface to a URL-building mechanism for game data.
 */
 type GameURL interface {
 	SetBaseURL(url string)
-	GetURLForDay(date time.Time) string
+	GetURLsForDate(date time.Time) string
 	GetURLsForDates(dates []time.Time)
 }
 
@@ -26,14 +26,14 @@ type LocalURL struct {
 /*
 SetBaseURL specifies the baseURL to be used for constructing URLs
 */
-func (lu *LocalURL) SetBaseURL(url string) {
+func (lu LocalURL) SetBaseURL(url string) {
 	lu.baseURL = url
 }
 
 /*
-GetURLsForDay returns a URL for a specific day
+GetURLsForDate returns a URL for a specific day
 */
-func (lu *LocalURL) GetURLsForDay(date time.Time) string {
+func (lu LocalURL) GetURLsForDate(date time.Time) string {
 	year := date.Year()
 	month := date.Month()
 	day := date.Day()
@@ -43,8 +43,8 @@ func (lu *LocalURL) GetURLsForDay(date time.Time) string {
 /*
 GetURLsForDates returns a slice of all URLs that correspond to that date
 */
-func (lu *LocalURL) GetURLsForDates(dates []time.Time) {
+func (lu LocalURL) GetURLsForDates(dates []time.Time) {
 	for _, date := range dates {
-		fmt.Println(lu.GetURLsForDay(date))
+		fmt.Println(lu.GetURLsForDate(date))
 	}
 }

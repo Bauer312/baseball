@@ -1,41 +1,42 @@
 package main
 
-import (
-	"flag"
-	"fmt"
-)
+import "time"
 
 /*
-	A typical use case for this program is to ask for the games that occurred:
-		* On a specific day
-			* Today
-			* Yesterday
-			* An arbitrary day
-		* In a specific month
-			* This month
-			* Last month
-			* An arbitrary month
-		* In a specific year
-			* This year
-			* Last year
-			* An arbitrary year
-
-	The purpose is to get data that will be used to either load into a database
-		or do some sort of analysis.
+Games is an interface that defines the interactions needed to get game data
 */
+type Games interface {
+	GamesForDates(dates []time.Time)
+	SetBaseURL(url string)
+}
 
-func main() {
-	datePtr := flag.String("date", "today", "Retrieve all games on this date.  Dates are in YYYYMMDD format")
+/*
+LocalGames is an implementation of the Games interface
+*/
+type LocalGames struct {
+	baseURL string
+	cache   GameCache
+	url     GameURL
+}
 
-	flag.Parse()
+/*
+SetBaseURL sets the url for the baseball website
+*/
+func (lc *LocalGames) SetBaseURL(url string) {
+	lc.baseURL = url
+	if lc.cache == nil {
+		lc.cache = FSCache{}
+	}
+	lc.cache.SetBaseURL(url)
+	if lc.url == nil {
+		lc.url = LocalURL{}
+	}
+	lc.url.SetBaseURL(url)
+}
 
-	cache := FSCache{}
-	cache.SetBaseURL("http://gd2.mlb.com/components/game/mlb/")
-	url := LocalURL{}
-	url.SetBaseURL("http://gd2.mlb.com/components/game/mlb/")
-
-	ds := LastWeek()
-	url.GetURLsForDates(ds)
-
-	fmt.Printf("Games for %s\n", *datePtr)
+/*
+GamesForDates returns all of the games associated with the dates
+*/
+func (lc *LocalGames) GamesForDates(dates []time.Time) {
+	lc.url.GetURLsForDates(dates)
 }
