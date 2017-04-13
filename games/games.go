@@ -1,6 +1,9 @@
 package main
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 /*
 Games is an interface that defines the interactions needed to get game data
@@ -25,11 +28,11 @@ SetBaseURL sets the url for the baseball website
 func (lc *LocalGames) SetBaseURL(url string) {
 	lc.baseURL = url
 	if lc.cache == nil {
-		lc.cache = FSCache{}
+		lc.cache = &FSCache{}
 	}
 	lc.cache.SetBaseURL(url)
 	if lc.url == nil {
-		lc.url = LocalURL{}
+		lc.url = &LocalURL{}
 	}
 	lc.url.SetBaseURL(url)
 }
@@ -38,5 +41,8 @@ func (lc *LocalGames) SetBaseURL(url string) {
 GamesForDates returns all of the games associated with the dates
 */
 func (lc *LocalGames) GamesForDates(dates []time.Time) {
-	lc.url.GetURLsForDates(dates)
+	urls := lc.url.GetURLsForDates(dates)
+	for _, url := range urls {
+		fmt.Println(url.Path)
+	}
 }
