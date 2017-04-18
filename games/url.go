@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"net/url"
 	"time"
 )
 
@@ -14,7 +13,7 @@ GameURL is an interface to a URL-building mechanism for game data.
 type GameURL interface {
 	SetBaseURL(url string)
 	GetURLsForDate(date time.Time) string
-	GetURLsForDates(dates []time.Time) []*url.URL
+	GetURLsForDates(dates []time.Time) []string
 }
 
 /*
@@ -38,22 +37,17 @@ func (lu *LocalURL) GetURLsForDate(date time.Time) string {
 	year := date.Year()
 	month := date.Month()
 	day := date.Day()
-	return fmt.Sprintf("%syear_%04d/month_%02d/day_%02d", lu.baseURL, year, month, day)
+	return fmt.Sprintf("%syear_%04d/month_%02d/day_%02d/", lu.baseURL, year, month, day)
 }
 
 /*
 GetURLsForDates returns a slice of all URLs that correspond to that date
 */
-func (lu *LocalURL) GetURLsForDates(dates []time.Time) []*url.URL {
-	returnUrls := make([]*url.URL, len(dates))
+func (lu *LocalURL) GetURLsForDates(dates []time.Time) []string {
+	returnUrls := make([]string, len(dates))
 	for i, date := range dates {
-		rawurl := lu.GetURLsForDate(date)
-		newURL, err := url.Parse(rawurl)
-		if err != nil {
-			fmt.Printf("Error parsing raw URL: %s", err)
-		}
-		returnUrls[i] = newURL
-		fmt.Println(rawurl)
+		returnUrls[i] = lu.GetURLsForDate(date)
+		fmt.Println(returnUrls[i])
 	}
 	return returnUrls
 }

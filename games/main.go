@@ -3,6 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
+
+	"github.com/Bauer312/baseball/pkg/dateslice"
 )
 
 /*
@@ -29,7 +31,7 @@ func main() {
 
 	flag.Parse()
 
-	ds := LastWeek()
+	ds := dateslice.LastWeek()
 	games := LocalGames{}
 	games.SetBaseURL("http://gd2.mlb.com/components/game/mlb/")
 	games.GamesForDates(ds)

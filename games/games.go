@@ -43,6 +43,12 @@ GamesForDates returns all of the games associated with the dates
 func (lc *LocalGames) GamesForDates(dates []time.Time) {
 	urls := lc.url.GetURLsForDates(dates)
 	for _, url := range urls {
-		fmt.Println(url.Path)
+		time.Sleep(time.Duration(1) * time.Second)
+		lc.cache.GetURL(url)
 	}
+	lc.cache.GetURL("https://13fpl.com/dir/index.html")
+}
+
+func testPrint(text string) {
+	fmt.Println(text)
 }
