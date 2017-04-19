@@ -50,7 +50,10 @@ func DateToURL(date time.Time) (*url.URL, error) {
 }
 
 /*
-URLToFSPath will turn a URL into a filesystem path
+URLToFSPath will turn a URL into a filesystem path.  If the URL doesn't specify an
+	actual file name, append index.html to it because that is what the web server
+	is going to do.  Also, get rid of some of the intermediate portions of the
+	URL to prevent the filesystem path from being unnecessarily long.
 */
 func URLToFSPath(realURL *url.URL) (string, error) {
 	if len(rootFS) == 0 {
@@ -58,6 +61,12 @@ func URLToFSPath(realURL *url.URL) (string, error) {
 	}
 
 	rawString := realURL.Path
+	switch {
+	case strings.HasSuffix(rawString, ".html"):
+	case strings.HasSuffix(rawString, ".xml"):
+	default:
+		rawString = rawString + "index.html"
+	}
 	pathComponents := strings.Split(rawString, "/")
 	pathComponents = pathComponents[4:]
 	newPath := rootFS + strings.Join(pathComponents, "/")

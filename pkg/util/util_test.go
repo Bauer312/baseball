@@ -43,7 +43,9 @@ func TestURLToFSPath(t *testing.T) {
 		RootFS       string
 		ExpectedPath string
 	}{
-		{helperForURL("http://www.test.com/components/game/mlb/year_2017/month_04/day_01/"), "/root", "/root/year_2017/month_04/day_01/"},
+		{helperForURL("http://www.test.com/components/game/mlb/year_2017/month_04/day_01/"), "/root", "/root/year_2017/month_04/day_01/index.html"},
+		{helperForURL("http://www.test.com/components/game/mlb/year_2017/month_04/day_01/index.html"), "/root", "/root/year_2017/month_04/day_01/index.html"},
+		{helperForURL("http://www.test.com/components/game/mlb/year_2017/month_04/day_01/test.xml"), "/root", "/root/year_2017/month_04/day_01/test.xml"},
 	}
 
 	for _, ex := range pathTest {
