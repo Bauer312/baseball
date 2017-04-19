@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -23,6 +24,9 @@ SetRoot is used to set the roots that will be used for constructing
 */
 func SetRoot(url, fs string) {
 	rootURL = url
+	if strings.HasSuffix(fs, "/") == false {
+		fs = fs + "/"
+	}
 	rootFS = fs
 }
 
@@ -48,6 +52,15 @@ func DateToURL(date time.Time) (*url.URL, error) {
 /*
 URLToFSPath will turn a URL into a filesystem path
 */
-func URLToFSPath() {
+func URLToFSPath(realURL *url.URL) (string, error) {
+	if len(rootFS) == 0 {
+		return "", errors.New("The root filesystem path has not been set")
+	}
 
+	rawString := realURL.Path
+	pathComponents := strings.Split(rawString, "/")
+	pathComponents = pathComponents[4:]
+	newPath := rootFS + strings.Join(pathComponents, "/")
+
+	return newPath, nil
 }

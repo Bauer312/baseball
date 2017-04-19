@@ -36,3 +36,24 @@ func TestDateToURL(t *testing.T) {
 		}
 	}
 }
+
+func TestURLToFSPath(t *testing.T) {
+	var pathTest = []struct {
+		URL          *url.URL
+		RootFS       string
+		ExpectedPath string
+	}{
+		{helperForURL("http://www.test.com/components/game/mlb/year_2017/month_04/day_01/"), "/root", "/root/year_2017/month_04/day_01/"},
+	}
+
+	for _, ex := range pathTest {
+		SetRoot("", ex.RootFS)
+		retPath, err := URLToFSPath(ex.URL)
+		if err != nil {
+			t.Errorf("Unable to convert URL to path")
+		}
+		if retPath != ex.ExpectedPath {
+			t.Errorf("Paths do not match -> %s vs %s", retPath, ex.ExpectedPath)
+		}
+	}
+}
