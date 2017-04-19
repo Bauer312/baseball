@@ -1,4 +1,4 @@
-package dateutil
+package util
 
 import (
 	"errors"
@@ -43,4 +43,11 @@ func DateToURL(date time.Time) (*url.URL, error) {
 		return nil, err
 	}
 	return realURL, nil
+}
+
+/*
+URLToFSPath will turn a URL into a filesystem path
+*/
+func URLToFSPath() {
+
 }
