@@ -54,8 +54,7 @@ func main() {
 			if err != nil {
 				fmt.Println(err)
 			}
-			fmt.Println(dateURL)
-			fmt.Println(dateFS)
+			fmt.Printf("Save %s to %s\n", dateURL, dateFS)
 		}
 	}
 }

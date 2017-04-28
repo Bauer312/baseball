@@ -73,3 +73,11 @@ func URLToFSPath(realURL *url.URL) (string, error) {
 
 	return newPath, nil
 }
+
+/*
+	err := os.MkdirAll(localFile, 0777)
+	if err != nil {
+		fmt.Printf("Unable to create directory %s => %s\n", localFile, err.Error())
+	}
+	localFile = localFile + "index.html"
+*/
