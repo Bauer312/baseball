@@ -135,3 +135,18 @@ func aYear(baseDate time.Time) []time.Time {
 
 	return ds
 }
+
+/*
+Range returns a slices of dates specified in the range
+*/
+func Range(beg, end time.Time) []time.Time {
+	daysInRange := end.Sub(beg).Hours()/24.0 + 1.0
+
+	ds := make([]time.Time, int(math.Ceil(daysInRange)))
+
+	for i := range ds {
+		ds[i] = beg.AddDate(0, 0, i)
+	}
+
+	return ds
+}
