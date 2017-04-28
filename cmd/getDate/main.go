@@ -36,10 +36,10 @@ func main() {
 	}
 
 	if len(*begDt) != 0 {
-		fmt.Println(*begDt)
-
 		if len(*endDt) != 0 {
-			fmt.Println(*endDt)
+			ds = dateslice.RangeString(*begDt, *endDt)
+		} else {
+			ds = dateslice.RangeString(*begDt, *begDt)
 		}
 	}
 

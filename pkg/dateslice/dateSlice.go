@@ -150,3 +150,19 @@ func Range(beg, end time.Time) []time.Time {
 
 	return ds
 }
+
+/*
+RangeString transforms a beginning and ending date from strings into dates and then returns
+	the results of the Range function
+*/
+func RangeString(begDt, endDt string) []time.Time {
+	beg, err := time.Parse("20060102", begDt)
+	if err != nil {
+		fmt.Println(err)
+	}
+	end, err := time.Parse("20060102", endDt)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return Range(beg, end)
+}
