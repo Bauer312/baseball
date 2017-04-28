@@ -45,7 +45,7 @@ func main() {
 
 	if ds != nil {
 		for _, d := range ds {
-			util.SetRoot("http://hmm.com/components/game/mlb", "/var/temp/")
+			util.SetRoot("http://gd2.mlb.com/components/game/mlb", "/usr/local/share/baseball")
 			dateURL, err := util.DateToURL(d)
 			if err != nil {
 				fmt.Println(err)
