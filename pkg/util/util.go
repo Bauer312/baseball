@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -24,10 +25,7 @@ SetRoot is used to set the roots that will be used for constructing
 */
 func SetRoot(url, fs string) {
 	rootURL = url
-	if strings.HasSuffix(fs, "/") == false {
-		fs = fs + "/"
-	}
-	rootFS = fs
+	rootFS = filepath.Clean(fs)
 }
 
 /*
@@ -69,7 +67,8 @@ func URLToFSPath(realURL *url.URL) (string, error) {
 	}
 	pathComponents := strings.Split(rawString, "/")
 	pathComponents = pathComponents[4:]
-	newPath := rootFS + strings.Join(pathComponents, "/")
+	newPath := strings.Join(pathComponents, "/")
+	newPath = filepath.Join(rootFS, newPath)
 
 	return newPath, nil
 }
