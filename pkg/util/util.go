@@ -3,7 +3,11 @@ package util
 import (
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -24,10 +28,7 @@ SetRoot is used to set the roots that will be used for constructing
 */
 func SetRoot(url, fs string) {
 	rootURL = url
-	if strings.HasSuffix(fs, "/") == false {
-		fs = fs + "/"
-	}
-	rootFS = fs
+	rootFS = filepath.Clean(fs)
 }
 
 /*
@@ -69,15 +70,50 @@ func URLToFSPath(realURL *url.URL) (string, error) {
 	}
 	pathComponents := strings.Split(rawString, "/")
 	pathComponents = pathComponents[4:]
-	newPath := rootFS + strings.Join(pathComponents, "/")
+	newPath := strings.Join(pathComponents, "/")
+	newPath = filepath.Join(rootFS, newPath)
 
 	return newPath, nil
 }
 
 /*
-	err := os.MkdirAll(localFile, 0777)
-	if err != nil {
-		fmt.Printf("Unable to create directory %s => %s\n", localFile, err.Error())
-	}
-	localFile = localFile + "index.html"
+VerifyFSDirectory verifies that a directory exists on the system, and creates it if it doesn't exist.
 */
+func VerifyFSDirectory(fsPath string) error {
+	fsDir := filepath.Dir(fsPath)
+	return os.MkdirAll(fsDir, 0777)
+}
+
+/*
+SaveURLToPath downloads a URL to a specific path on the filesystem
+*/
+func SaveURLToPath(targetURL *url.URL, targetPath string) error {
+	// First, make sure the directory exists
+	err := VerifyFSDirectory(targetPath)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Saving %s to %s\n", targetURL, targetPath)
+
+	// Second, make the request
+	res, err := http.Get(targetURL.String())
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	// Third, create the target file
+	filePtr, err := os.Create(targetPath)
+	if err != nil {
+		return err
+	}
+	defer filePtr.Close()
+
+	// Fourth, copy the data into the file
+	_, err = io.Copy(filePtr, res.Body)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

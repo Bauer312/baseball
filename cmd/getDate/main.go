@@ -32,6 +32,8 @@ func main() {
 			ds = dateslice.ThisMonth()
 		case "lastmonth":
 			ds = dateslice.LastMonth()
+		default:
+			fmt.Println("Please use a word, such as 'today' or 'lastmonth'.")
 		}
 	}
 
@@ -44,7 +46,7 @@ func main() {
 	}
 
 	if ds != nil {
-		for _, d := range ds {
+		for i, d := range ds {
 			util.SetRoot("http://gd2.mlb.com/components/game/mlb", "/usr/local/share/baseball")
 			dateURL, err := util.DateToURL(d)
 			if err != nil {
@@ -54,7 +56,16 @@ func main() {
 			if err != nil {
 				fmt.Println(err)
 			}
-			fmt.Printf("Save %s to %s\n", dateURL, dateFS)
+
+			// Be kind to the web server, if there are multiple requests, wait 5 seconds between them
+			if i > 0 {
+				time.Sleep(5 * time.Second)
+			}
+
+			err = util.SaveURLToPath(dateURL, dateFS)
+			if err != nil {
+				fmt.Println(err)
+			}
 		}
 	}
 }
