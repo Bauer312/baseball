@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -74,9 +75,21 @@ func URLToFSPath(realURL *url.URL) (string, error) {
 }
 
 /*
-	err := os.MkdirAll(localFile, 0777)
-	if err != nil {
-		fmt.Printf("Unable to create directory %s => %s\n", localFile, err.Error())
-	}
-	localFile = localFile + "index.html"
+VerifyFSDirectory verifies that a directory exists on the system, and creates it if it doesn't exist.
 */
+func VerifyFSDirectory(fsPath string) error {
+	fsDir := filepath.Dir(fsPath)
+	return os.MkdirAll(fsDir, 0777)
+}
+
+/*
+SaveURLToPath downloads a URL to a specific path on the filesystem
+*/
+func SaveURLToPath(targetURL *url.URL, targetPath string) error {
+	err := VerifyFSDirectory(targetPath)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Saving %s to %s\n", targetURL, targetPath)
+	return nil
+}

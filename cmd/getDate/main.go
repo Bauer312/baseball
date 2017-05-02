@@ -32,6 +32,8 @@ func main() {
 			ds = dateslice.ThisMonth()
 		case "lastmonth":
 			ds = dateslice.LastMonth()
+		default:
+			fmt.Println("Please use a word, such as 'today' or 'lastmonth'.")
 		}
 	}
 
@@ -54,7 +56,11 @@ func main() {
 			if err != nil {
 				fmt.Println(err)
 			}
-			fmt.Printf("Save %s to %s\n", dateURL, dateFS)
+
+			err = util.SaveURLToPath(dateURL, dateFS)
+			if err != nil {
+				fmt.Println(err)
+			}
 		}
 	}
 }
