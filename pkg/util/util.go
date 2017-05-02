@@ -3,6 +3,8 @@ package util
 import (
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -86,10 +88,32 @@ func VerifyFSDirectory(fsPath string) error {
 SaveURLToPath downloads a URL to a specific path on the filesystem
 */
 func SaveURLToPath(targetURL *url.URL, targetPath string) error {
+	// First, make sure the directory exists
 	err := VerifyFSDirectory(targetPath)
 	if err != nil {
 		return err
 	}
 	fmt.Printf("Saving %s to %s\n", targetURL, targetPath)
+
+	// Second, make the request
+	res, err := http.Get(targetURL.String())
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	// Third, create the target file
+	filePtr, err := os.Create(targetPath)
+	if err != nil {
+		return err
+	}
+	defer filePtr.Close()
+
+	// Fourth, copy the data into the file
+	_, err = io.Copy(filePtr, res.Body)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
