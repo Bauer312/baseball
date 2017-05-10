@@ -51,8 +51,10 @@ func main() {
 						for _, a := range t.Attr {
 							if a.Key == "href" {
 								if strings.HasPrefix(a.Val, "gid_") {
-									fmt.Printf("%s%s\n", dateURL, a.Val)
-									//fmt.Println("Found href:", a.Val)
+									fmt.Printf("%s%sgame.xml\n", dateURL, a.Val)
+									fmt.Printf("%s%sgame_events.xml\n", dateURL, a.Val)
+									fmt.Printf("%s%sinning/inning_all.xml\n", dateURL, a.Val)
+									fmt.Printf("%s%sinning/inning_hit.xml\n", dateURL, a.Val)
 								}
 
 								break
