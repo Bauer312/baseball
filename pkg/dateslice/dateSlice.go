@@ -166,3 +166,46 @@ func RangeString(begDt, endDt string) []time.Time {
 	}
 	return Range(beg, end)
 }
+
+/*
+DateStringToSlice returns a slice of dates corresponding to the text in a string
+*/
+func DateStringToSlice(dateText string) []time.Time {
+	var ds []time.Time
+	switch dateText {
+	case "today":
+		ds = Today()
+	case "yesterday":
+		ds = Yesterday()
+	case "thisweek":
+		ds = ThisWeek()
+	case "lastweek":
+		ds = LastWeek()
+	case "thismonth":
+		ds = ThisMonth()
+	case "lastmonth":
+		ds = LastMonth()
+	default:
+		fmt.Println("Please use a word, such as 'today' or 'lastmonth'.")
+	}
+	return ds
+}
+
+/*
+DateObjectsToSlice returns a slice of dates based upon the contents of 3 flags
+*/
+func DateObjectsToSlice(dateString, begDt, endDt string) []time.Time {
+	var ds []time.Time
+	if len(dateString) != 0 {
+		ds = DateStringToSlice(dateString)
+	}
+
+	if len(begDt) != 0 {
+		if len(endDt) != 0 {
+			ds = RangeString(begDt, endDt)
+		} else {
+			ds = RangeString(begDt, begDt)
+		}
+	}
+	return ds
+}
