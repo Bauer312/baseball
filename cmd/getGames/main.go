@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"golang.org/x/net/html"
 
@@ -51,10 +52,26 @@ func main() {
 						for _, a := range t.Attr {
 							if a.Key == "href" {
 								if strings.HasPrefix(a.Val, "gid_") {
-									fmt.Printf("%s%sgame.xml\n", dateURL, a.Val)
-									fmt.Printf("%s%sgame_events.xml\n", dateURL, a.Val)
-									fmt.Printf("%s%sinning/inning_all.xml\n", dateURL, a.Val)
-									fmt.Printf("%s%sinning/inning_hit.xml\n", dateURL, a.Val)
+									gameURLs, err := util.GameToURLs(a.Val)
+									if err != nil {
+										fmt.Println(err)
+										break
+									}
+									for i, gameURL := range gameURLs {
+										gameFS, err := util.URLToFSPath(gameURL)
+										if err != nil {
+											fmt.Println(err)
+										}
+										// Be kind to the web server, if there are multiple requests, wait 5 seconds between them
+										if i > 0 {
+											time.Sleep(5 * time.Second)
+										}
+
+										err = util.SaveURLToPath(gameURL, gameFS)
+										if err != nil {
+											fmt.Println(err)
+										}
+									}
 								}
 
 								break
