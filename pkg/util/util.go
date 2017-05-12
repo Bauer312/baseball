@@ -51,6 +51,41 @@ func DateToURL(date time.Time) (*url.URL, error) {
 }
 
 /*
+GameToURLs will turn a game into a set of URLs
+*/
+func GameToURLs(game string) ([]*url.URL, error) {
+	if len(rootURL) == 0 {
+		return nil, errors.New("The root URL has not been set")
+	}
+	year := game[4:8]
+	month := game[9:11]
+	day := game[12:14]
+	rawURL := fmt.Sprintf("%s/year_%s/month_%s/day_%s/%s", rootURL, year, month, day, game)
+	gameURLs := make([]*url.URL, 4)
+	newURL, err := url.Parse(rawURL + "game.xml")
+	if err != nil {
+		return nil, err
+	}
+	gameURLs[0] = newURL
+	newURL, err = url.Parse(rawURL + "game_events.xml")
+	if err != nil {
+		return nil, err
+	}
+	gameURLs[1] = newURL
+	newURL, err = url.Parse(rawURL + "inning/inning_all.xml")
+	if err != nil {
+		return nil, err
+	}
+	gameURLs[2] = newURL
+	newURL, err = url.Parse(rawURL + "inning/inning_hit.xml")
+	if err != nil {
+		return nil, err
+	}
+	gameURLs[3] = newURL
+	return gameURLs, nil
+}
+
+/*
 URLToFSPath will turn a URL into a filesystem path.  If the URL doesn't specify an
 	actual file name, append index.html to it because that is what the web server
 	is going to do.  Also, get rid of some of the intermediate portions of the

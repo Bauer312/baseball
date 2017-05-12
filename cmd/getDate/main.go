@@ -16,34 +16,7 @@ func main() {
 
 	flag.Parse()
 
-	var ds []time.Time
-
-	if len(*dateString) != 0 {
-		switch *dateString {
-		case "today":
-			ds = dateslice.Today()
-		case "yesterday":
-			ds = dateslice.Yesterday()
-		case "thisweek":
-			ds = dateslice.ThisWeek()
-		case "lastweek":
-			ds = dateslice.LastWeek()
-		case "thismonth":
-			ds = dateslice.ThisMonth()
-		case "lastmonth":
-			ds = dateslice.LastMonth()
-		default:
-			fmt.Println("Please use a word, such as 'today' or 'lastmonth'.")
-		}
-	}
-
-	if len(*begDt) != 0 {
-		if len(*endDt) != 0 {
-			ds = dateslice.RangeString(*begDt, *endDt)
-		} else {
-			ds = dateslice.RangeString(*begDt, *begDt)
-		}
-	}
+	ds := dateslice.DateObjectsToSlice(*dateString, *begDt, *endDt)
 
 	if ds != nil {
 		for i, d := range ds {
