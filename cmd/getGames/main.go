@@ -39,58 +39,54 @@ func main() {
 	ds := dateslice.DateObjectsToSlice(*dateString, *begDt, *endDt)
 
 	if ds != nil {
+		var rsrc util.Resource
+		rsrc.Roots("http://gd2.mlb.com/components/game/mlb", "/usr/local/share/baseball")
 		for _, d := range ds {
-			util.SetRoot("http://gd2.mlb.com/components/game/mlb", "/usr/local/share/baseball")
-			dateURL, err := util.DateToURL(d)
+			tDefs, err := rsrc.Date(d)
 			if err != nil {
 				fmt.Println(err)
 			}
-			dateFS, err := util.URLToFSPath(dateURL)
-			if err != nil {
-				fmt.Println(err)
-			}
-			fileReader, err := os.Open(dateFS)
-			if err != nil {
-				fmt.Println(err)
-			}
-			defer fileReader.Close()
-			htmlTokenizer := html.NewTokenizer(fileReader)
-			for {
-				tt := htmlTokenizer.Next()
-				if tt == html.ErrorToken {
-					break
+
+			for _, tDef := range tDefs {
+				fileReader, err := os.Open(tDef.Target)
+				if err != nil {
+					fmt.Println(err)
 				}
-				if tt == html.StartTagToken {
-					t := htmlTokenizer.Token()
+				defer fileReader.Close()
+				htmlTokenizer := html.NewTokenizer(fileReader)
+				for {
+					tt := htmlTokenizer.Next()
+					if tt == html.ErrorToken {
+						break
+					}
 
-					isAnchor := t.Data == "a"
-					if isAnchor {
-						for _, a := range t.Attr {
-							if a.Key == "href" {
-								if strings.HasPrefix(a.Val, "gid_") {
-									gameURLs, err := util.GameToURLs(a.Val)
-									if err != nil {
-										fmt.Println(err)
-										break
-									}
-									for i, gameURL := range gameURLs {
-										gameFS, err := util.URLToFSPath(gameURL)
+					if tt == html.StartTagToken {
+						t := htmlTokenizer.Token()
+
+						isAnchor := t.Data == "a"
+						if isAnchor {
+							for _, a := range t.Attr {
+								if a.Key == "href" {
+									if strings.HasPrefix(a.Val, "gid_") {
+										gDefs, err := rsrc.Game(a.Val)
 										if err != nil {
 											fmt.Println(err)
+											break
 										}
-										// Be kind to the web server, if there are multiple requests, wait 5 seconds between them
-										if i > 0 {
-											time.Sleep(5 * time.Second)
-										}
+										for i, gDef := range gDefs {
+											// Be kind to the web server, if there are multiple requests, wait 3 seconds between them
+											if i > 0 {
+												time.Sleep(3 * time.Second)
+											}
 
-										err = util.SaveURLToPath(gameURL, gameFS)
-										if err != nil {
-											fmt.Println(err)
+											err = util.SaveURLToPath(gDef.Source, gDef.Target)
+											if err != nil {
+												fmt.Println(err)
+											}
 										}
 									}
+									break
 								}
-
-								break
 							}
 						}
 					}

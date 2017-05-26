@@ -35,25 +35,24 @@ func main() {
 	ds := dateslice.DateObjectsToSlice(*dateString, *begDt, *endDt)
 
 	if ds != nil {
+		var rsrc util.Resource
+		rsrc.Roots("http://gd2.mlb.com/components/game/mlb", "/usr/local/share/baseball")
 		for i, d := range ds {
-			util.SetRoot("http://gd2.mlb.com/components/game/mlb", "/usr/local/share/baseball")
-			dateURL, err := util.DateToURL(d)
-			if err != nil {
-				fmt.Println(err)
-			}
-			dateFS, err := util.URLToFSPath(dateURL)
+			tDefs, err := rsrc.Date(d)
 			if err != nil {
 				fmt.Println(err)
 			}
 
-			// Be kind to the web server, if there are multiple requests, wait 5 seconds between them
-			if i > 0 {
-				time.Sleep(5 * time.Second)
-			}
+			for _, tDef := range tDefs {
+				// Be kind to the web server, if there are multiple requests, wait 3 seconds between them
+				if i > 0 {
+					time.Sleep(3 * time.Second)
+				}
 
-			err = util.SaveURLToPath(dateURL, dateFS)
-			if err != nil {
-				fmt.Println(err)
+				err = util.SaveURLToPath(tDef.Source, tDef.Target)
+				if err != nil {
+					fmt.Println(err)
+				}
 			}
 		}
 	}
