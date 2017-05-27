@@ -16,18 +16,7 @@
 
 package util
 
-import (
-	"net/http"
-	"net/url"
-)
-
-/*
-TransferDefinition is a struct that contains the remote URL and the local filesystem locations for some resource
-*/
-type TransferDefinition struct {
-	Source *url.URL
-	Target string
-}
+import "net/http"
 
 type resourceQueue interface {
 	UseClient(*http.Client) error

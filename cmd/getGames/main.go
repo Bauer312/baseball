@@ -19,11 +19,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"os"
-	"strings"
 	"time"
-
-	"golang.org/x/net/html"
 
 	"github.com/Bauer312/baseball/pkg/dateslice"
 	"github.com/Bauer312/baseball/pkg/util"
@@ -48,46 +44,25 @@ func main() {
 			}
 
 			for _, tDef := range tDefs {
-				fileReader, err := os.Open(tDef.Target)
+				gameIDs, err := util.ParseGameFile(tDef.Target)
 				if err != nil {
 					fmt.Println(err)
 				}
-				defer fileReader.Close()
-				htmlTokenizer := html.NewTokenizer(fileReader)
-				for {
-					tt := htmlTokenizer.Next()
-					if tt == html.ErrorToken {
+				for _, gameID := range gameIDs {
+					gDefs, err := rsrc.Game(gameID)
+					if err != nil {
+						fmt.Println(err)
 						break
 					}
+					for i, gDef := range gDefs {
+						// Be kind to the web server, if there are multiple requests, wait 3 seconds between them
+						if i > 0 {
+							time.Sleep(3 * time.Second)
+						}
 
-					if tt == html.StartTagToken {
-						t := htmlTokenizer.Token()
-
-						isAnchor := t.Data == "a"
-						if isAnchor {
-							for _, a := range t.Attr {
-								if a.Key == "href" {
-									if strings.HasPrefix(a.Val, "gid_") {
-										gDefs, err := rsrc.Game(a.Val)
-										if err != nil {
-											fmt.Println(err)
-											break
-										}
-										for i, gDef := range gDefs {
-											// Be kind to the web server, if there are multiple requests, wait 3 seconds between them
-											if i > 0 {
-												time.Sleep(3 * time.Second)
-											}
-
-											err = util.SaveURLToPath(gDef.Source, gDef.Target)
-											if err != nil {
-												fmt.Println(err)
-											}
-										}
-									}
-									break
-								}
-							}
+						err = util.SaveURLToPath(gDef.Source, gDef.Target)
+						if err != nil {
+							fmt.Println(err)
 						}
 					}
 				}

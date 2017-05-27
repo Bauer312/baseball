@@ -18,8 +18,17 @@ package util
 
 import (
 	"errors"
+	"net/url"
 	"time"
 )
+
+/*
+TransferDefinition is a struct that contains the remote URL and the local filesystem locations for some resource
+*/
+type TransferDefinition struct {
+	Source *url.URL
+	Target string
+}
 
 type resourceConstructor interface {
 	Roots(string, string) error
