@@ -19,6 +19,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/Bauer312/baseball/pkg/dateslice"
@@ -36,24 +37,28 @@ func main() {
 
 	if ds != nil {
 		var rsrc util.Resource
+		var queue util.TransferQueue
+		err := queue.UseClient(&http.Client{
+			Timeout: time.Second * 10,
+		})
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
 		rsrc.Roots("http://gd2.mlb.com/components/game/mlb", "/usr/local/share/baseball")
-		for i, d := range ds {
+		for _, d := range ds {
 			tDefs, err := rsrc.Date(d)
 			if err != nil {
 				fmt.Println(err)
 			}
 
 			for _, tDef := range tDefs {
-				// Be kind to the web server, if there are multiple requests, wait 3 seconds between them
-				if i > 0 {
-					time.Sleep(3 * time.Second)
-				}
-
-				err = util.SaveURLToPath(tDef.Source, tDef.Target)
+				err = queue.Transfer(tDef)
 				if err != nil {
 					fmt.Println(err)
 				}
 			}
 		}
+		queue.Done()
 	}
 }
