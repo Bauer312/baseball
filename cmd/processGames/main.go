@@ -73,7 +73,8 @@ func main() {
 					}
 					for _, gDef := range gDefs {
 						fileName := filepath.Base(gDef.Target)
-						if fileName == "game.xml" {
+						switch fileName {
+						case "game.xml":
 							gameXMLContents, err := util.ParseGameXML(gDef.Target)
 							if err != nil {
 								fmt.Println(err)
@@ -84,6 +85,14 @@ func main() {
 								if err != nil {
 									fmt.Println(err)
 								}
+							}
+						case "game_events.xml":
+							gameEventsXMLContents, err := util.ParseGameEventsXML(gDef.Target)
+							if err != nil {
+								fmt.Println(err)
+							}
+							for _, gameEventString := range gameEventsXMLContents {
+								fmt.Print(gameEventString)
 							}
 						}
 					}
