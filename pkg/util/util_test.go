@@ -40,8 +40,7 @@ func TestDateToURL(t *testing.T) {
 	}
 
 	for _, ex := range dateTest {
-		SetRoot(ex.RootURL, "")
-		retURL, err := DateToURL(ex.Date)
+		retURL, err := DateToURLNoSideEffects(ex.Date, ex.RootURL)
 		if err != nil {
 			t.Errorf("Unable to convert date to URL")
 		}
@@ -65,8 +64,7 @@ func TestURLToFSPath(t *testing.T) {
 	}
 
 	for _, ex := range pathTest {
-		SetRoot("", ex.RootFS)
-		retPath, err := URLToFSPath(ex.URL)
+		retPath, err := URLToFSPathNoSideEffects(ex.URL, ex.RootFS)
 		if err != nil {
 			t.Errorf("Unable to convert URL to path")
 		}

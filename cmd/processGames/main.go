@@ -19,6 +19,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/Bauer312/baseball/pkg/dateslice"
@@ -38,6 +39,22 @@ func main() {
 		var rsrc util.Resource
 		rsrc.Roots("http://gd2.mlb.com/components/game/mlb", "/usr/local/share/baseball")
 		for _, d := range ds {
+			dateString := d.Format("20060102")
+			processedPath, err := util.DateToProcessedFileNoSideEffects(d, "http://gd2.mlb.com/components/game/mlb", "/usr/local/share/baseball", "game.dat")
+			if err != nil {
+				fmt.Println(err)
+			}
+			err = util.VerifyFSDirectory(processedPath)
+			if err != nil {
+				fmt.Println(err)
+			}
+			filePtr, err := os.Create(processedPath)
+			if err != nil {
+				fmt.Println(err)
+			}
+			defer filePtr.Close()
+
+			fmt.Println(processedPath)
 			tDefs, err := rsrc.Date(d)
 			if err != nil {
 				fmt.Println(err)
@@ -62,7 +79,11 @@ func main() {
 								fmt.Println(err)
 							}
 							for _, gameString := range gameXMLContents {
-								fmt.Println(gameString)
+								fmt.Print(dateString + "|" + gameString)
+								_, err = filePtr.WriteString(dateString + "|" + gameString)
+								if err != nil {
+									fmt.Println(err)
+								}
 							}
 						}
 					}

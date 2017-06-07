@@ -91,7 +91,7 @@ func (tq *TransferQueue) processQueueItems() {
 		if i > 0 {
 			time.Sleep(3 * time.Second)
 		}
-		err := SaveURLToPath(tf.Source, tf.Target)
+		err := SaveURLToPath(tf.Source, tf.Target, tq.Client)
 		if err != nil {
 			fmt.Println(err)
 		}
