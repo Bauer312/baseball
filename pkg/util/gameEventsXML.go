@@ -110,11 +110,11 @@ type GameEventsXMLGame struct {
 ParseGameEventsXML is a method that opens the locally-saved game_events.xml file and parses the
 	contents into data structures.
 */
-func ParseGameEventsXML(path string) ([]string, error) {
+func ParseGameEventsXML(path, date string, filePtr *os.File) error {
 	gameID := filepath.Base(filepath.Dir(path))
 	fileReader, err := os.Open(path)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer fileReader.Close()
 
@@ -122,20 +122,24 @@ func ParseGameEventsXML(path string) ([]string, error) {
 	decoder := xml.NewDecoder(fileReader)
 	err = decoder.Decode(&g)
 	if err != nil {
-		return nil, err
+		return err
 	}
+
+	initialPrefix := date + "|" + gameID
 
 	for _, inning := range g.Innings {
-		topHalfPrefix := gameID + "|" + inning.Number + "|" + "Top"
-		printHalfInning(inning.TopHalf, topHalfPrefix)
-		bottomHalfPrefix := gameID + "|" + inning.Number + "|" + "Bottom"
-		printHalfInning(inning.BottomHalf, bottomHalfPrefix)
+		inningPrefix := initialPrefix + "|" + inning.Number
+
+		topHalfPrefix := inningPrefix + "|" + "Top"
+		printHalfInning(inning.TopHalf, topHalfPrefix, filePtr)
+		bottomHalfPrefix := inningPrefix + "|" + "Bottom"
+		printHalfInning(inning.BottomHalf, bottomHalfPrefix, filePtr)
 	}
 
-	return nil, nil
+	return nil
 }
 
-func printHalfInning(innings GameEventsXMLHalfInning, linePrefix string) {
+func printHalfInning(innings GameEventsXMLHalfInning, linePrefix string, filePtr *os.File) {
 	for _, atbat := range innings.AtBats {
 		atBatPrefix := fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s",
 			linePrefix,
@@ -161,7 +165,7 @@ func printHalfInning(innings GameEventsXMLHalfInning, linePrefix string) {
 			atbat.ThirdBasePlayer,
 		)
 		for _, pitch := range atbat.Pitches {
-			fmt.Printf("%s|%s|%s|%s|%s|%s|%s\n",
+			outputString := fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s\n",
 				atBatPrefix,
 				pitch.SVID,
 				pitch.EnglishDescription,
@@ -170,11 +174,15 @@ func printHalfInning(innings GameEventsXMLHalfInning, linePrefix string) {
 				pitch.StartSpeed,
 				pitch.PitchType,
 			)
+			_, err := filePtr.WriteString(outputString)
+			if err != nil {
+				fmt.Println(err)
+			}
 		}
 	}
 
 	for _, action := range innings.Actions {
-		fmt.Printf("%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s\n",
+		outputString := fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s\n",
 			linePrefix,
 			action.Balls,
 			action.Strikes,
@@ -191,5 +199,9 @@ func printHalfInning(innings GameEventsXMLHalfInning, linePrefix string) {
 			action.HomeTeamRuns,
 			action.AwayTeamRuns,
 		)
+		_, err := filePtr.WriteString(outputString)
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
 }
