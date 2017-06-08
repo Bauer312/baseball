@@ -40,21 +40,33 @@ func main() {
 		rsrc.Roots("http://gd2.mlb.com/components/game/mlb", "/usr/local/share/baseball")
 		for _, d := range ds {
 			dateString := d.Format("20060102")
-			processedPath, err := util.DateToProcessedFileNoSideEffects(d, "http://gd2.mlb.com/components/game/mlb", "/usr/local/share/baseball", "game.dat")
+			processedPathGameXML, err := util.DateToProcessedFileNoSideEffects(d, "http://gd2.mlb.com/components/game/mlb", "/usr/local/share/baseball", "game.dat")
 			if err != nil {
 				fmt.Println(err)
 			}
-			err = util.VerifyFSDirectory(processedPath)
+			err = util.VerifyFSDirectory(processedPathGameXML)
 			if err != nil {
 				fmt.Println(err)
 			}
-			filePtr, err := os.Create(processedPath)
+			filePtrGame, err := os.Create(processedPathGameXML)
 			if err != nil {
 				fmt.Println(err)
 			}
-			defer filePtr.Close()
+			defer filePtrGame.Close()
 
-			fmt.Println(processedPath)
+			processedPathGameEventsXML, err := util.DateToProcessedFileNoSideEffects(d, "http://gd2.mlb.com/components/game/mlb", "/usr/local/share/baseball", "game_events.dat")
+			if err != nil {
+				fmt.Println(err)
+			}
+			filePtrGameEvents, err := os.Create(processedPathGameEventsXML)
+			if err != nil {
+				fmt.Println(err)
+			}
+			defer filePtrGameEvents.Close()
+
+			fmt.Println(processedPathGameXML)
+			fmt.Println(processedPathGameEventsXML)
+
 			tDefs, err := rsrc.Date(d)
 			if err != nil {
 				fmt.Println(err)
@@ -73,17 +85,16 @@ func main() {
 					}
 					for _, gDef := range gDefs {
 						fileName := filepath.Base(gDef.Target)
-						if fileName == "game.xml" {
-							gameXMLContents, err := util.ParseGameXML(gDef.Target)
+						switch fileName {
+						case "game.xml":
+							err = util.ParseGameXML(gDef.Target, dateString, filePtrGame)
 							if err != nil {
 								fmt.Println(err)
 							}
-							for _, gameString := range gameXMLContents {
-								fmt.Print(dateString + "|" + gameString)
-								_, err = filePtr.WriteString(dateString + "|" + gameString)
-								if err != nil {
-									fmt.Println(err)
-								}
+						case "game_events.xml":
+							err = util.ParseGameEventsXML(gDef.Target, dateString, filePtrGameEvents)
+							if err != nil {
+								fmt.Println(err)
 							}
 						}
 					}
