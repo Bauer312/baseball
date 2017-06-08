@@ -69,11 +69,11 @@ type GameXMLGame struct {
 ParseGameXML is a method that opens the locally-saved game.xml file and parses the
 	contents into data structures.
 */
-func ParseGameXML(path, date string) ([]string, error) {
+func ParseGameXML(path, date string, filePtr *os.File) error {
 	gameID := filepath.Base(filepath.Dir(path))
 	fileReader, err := os.Open(path)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer fileReader.Close()
 
@@ -81,10 +81,9 @@ func ParseGameXML(path, date string) ([]string, error) {
 	decoder := xml.NewDecoder(fileReader)
 	err = decoder.Decode(&g)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	returnStrings := make([]string, len(g.Teams))
-	for i, team := range g.Teams {
+	for _, team := range g.Teams {
 		teamString := fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s\n",
 			date,
 			gameID,
@@ -111,8 +110,11 @@ func ParseGameXML(path, date string) ([]string, error) {
 			g.Stadium.VenueWhoKnows,
 			g.Stadium.Location,
 		)
-		returnStrings[i] = teamString
+		_, err := filePtr.WriteString(teamString)
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
 
-	return returnStrings, nil
+	return nil
 }

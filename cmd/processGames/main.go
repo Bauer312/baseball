@@ -65,6 +65,8 @@ func main() {
 			defer filePtrGameEvents.Close()
 
 			fmt.Println(processedPathGameXML)
+			fmt.Println(processedPathGameEventsXML)
+
 			tDefs, err := rsrc.Date(d)
 			if err != nil {
 				fmt.Println(err)
@@ -85,16 +87,9 @@ func main() {
 						fileName := filepath.Base(gDef.Target)
 						switch fileName {
 						case "game.xml":
-							gameXMLContents, err := util.ParseGameXML(gDef.Target, dateString)
+							err = util.ParseGameXML(gDef.Target, dateString, filePtrGame)
 							if err != nil {
 								fmt.Println(err)
-							}
-							for _, gameString := range gameXMLContents {
-								fmt.Print(gameString)
-								_, err = filePtrGame.WriteString(gameString)
-								if err != nil {
-									fmt.Println(err)
-								}
 							}
 						case "game_events.xml":
 							err = util.ParseGameEventsXML(gDef.Target, dateString, filePtrGameEvents)
