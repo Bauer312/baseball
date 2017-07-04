@@ -38,19 +38,26 @@ ChannelListener should be run in a goroutine and will receive data on the input 
 	form of strings
 */
 func (dC *DateConvert) ChannelListener(baseURL string) {
-	var controlString string
-	var inputDate time.Time
-	for {
-		select {
-		case inputDate = <-dC.DataInput:
-			year := inputDate.Year()
-			month := inputDate.Month()
-			day := inputDate.Day()
-			dC.DataOutput <- fmt.Sprintf("%s/year_%04d/month_%02d/day_%02d/", baseURL, year, month, day)
-		case controlString = <-dC.Control.Input:
-			if controlString == "quit" {
-				dC.Control.Output <- "done"
-			}
-		}
+	for inputDate := range dC.DataInput {
+		year := inputDate.Year()
+		month := inputDate.Month()
+		day := inputDate.Day()
+		dC.DataOutput <- fmt.Sprintf("%s/year_%04d/month_%02d/day_%02d/", baseURL, year, month, day)
 	}
+
+	dC.Control.Output <- "ended"
+}
+
+/*
+Init will create all channels and other initialization needs.
+	The DataInput channel is the output of any previous
+	pipeline stage so it shouldn't be created here
+*/
+func (dC *DateConvert) Init() error {
+	dC.Control.Input = make(chan string)
+	dC.Control.Output = make(chan string)
+
+	dC.DataOutput = make(chan string, 5)
+
+	return nil
 }

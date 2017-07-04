@@ -24,7 +24,7 @@ import (
 func TestDateConversion(t *testing.T) {
 	var conversionTest = []struct {
 		InputData  []time.Time
-		OutputData []string
+		OutputData []URLLoadParameters
 		BaseURL    string
 	}{
 		{
@@ -32,9 +32,9 @@ func TestDateConversion(t *testing.T) {
 				time.Date(2017, time.January, 1, 5, 0, 0, 0, time.UTC),
 				time.Date(2017, time.January, 2, 5, 0, 0, 0, time.UTC),
 			},
-			[]string{
-				"http://test.com/a/b/c/year_2017/month_01/day_01/",
-				"http://test.com/a/b/c/year_2017/month_01/day_02/",
+			[]URLLoadParameters{
+				URLLoadParameters{URL: "http://test.com/a/b/c/year_2017/month_01/day_01/"},
+				URLLoadParameters{URL: "http://test.com/a/b/c/year_2017/month_01/day_02/"},
 			},
 			"http://test.com/a/b/c",
 		},
@@ -45,11 +45,11 @@ func TestDateConversion(t *testing.T) {
 				time.Date(2017, time.May, 31, 5, 0, 0, 0, time.UTC),
 				time.Date(2017, time.June, 1, 5, 0, 0, 0, time.UTC),
 			},
-			[]string{
-				"http://test.com/a/b/c/year_2017/month_05/day_29/",
-				"http://test.com/a/b/c/year_2017/month_05/day_30/",
-				"http://test.com/a/b/c/year_2017/month_05/day_31/",
-				"http://test.com/a/b/c/year_2017/month_06/day_01/",
+			[]URLLoadParameters{
+				URLLoadParameters{URL: "http://test.com/a/b/c/year_2017/month_05/day_29/"},
+				URLLoadParameters{URL: "http://test.com/a/b/c/year_2017/month_05/day_30/"},
+				URLLoadParameters{URL: "http://test.com/a/b/c/year_2017/month_05/day_31/"},
+				URLLoadParameters{URL: "http://test.com/a/b/c/year_2017/month_06/day_01/"},
 			},
 			"http://test.com/a/b/c",
 		},
@@ -57,20 +57,19 @@ func TestDateConversion(t *testing.T) {
 
 	for caseNumber, ex := range conversionTest {
 		var dC DateConvert
+		dC.Init()
+		// DataInput channels don't get created automatically
 		dC.DataInput = make(chan time.Time)
-		dC.DataOutput = make(chan string)
-		dC.Control.Input = make(chan string)
-		dC.Control.Output = make(chan string)
 
 		// Start the method under test
 		go dC.ChannelListener(ex.BaseURL)
 
 		// Start the anonymous function that receives the output of the method under test
-		go func() {
-			for i, exOutput := range ex.OutputData {
+		go func(expected []URLLoadParameters) {
+			for i, exOutput := range expected {
 				output := <-dC.DataOutput
-				if output != exOutput {
-					t.Errorf("Output element %d mismatch: expected %s but received %s", i, exOutput, exOutput)
+				if output.URL != exOutput.URL {
+					t.Errorf("Output element %d mismatch: expected %s but received %s", i, exOutput.URL, exOutput.URL)
 				}
 			}
 
@@ -79,15 +78,15 @@ func TestDateConversion(t *testing.T) {
 			case <-dC.DataOutput:
 				t.Errorf("Test Case %d received too many elements: expected %d but received at least %d",
 					caseNumber,
-					len(ex.OutputData),
-					len(ex.OutputData)+1)
+					len(expected),
+					len(expected)+1)
 			default:
 				break
 			}
 
 			// All data has been received, go ahead and send the signal that will cause the method under test to return
 			dC.Control.Input <- "quit"
-		}()
+		}(ex.OutputData)
 
 		// Send the input data to the input channel
 		for _, data := range ex.InputData {

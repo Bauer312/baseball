@@ -47,30 +47,33 @@ ChannelListener should be run in a goroutine and will receive data on the input 
 	elements and these elements are then sent out over the output channel.
 */
 func (dI *DateInput) ChannelListener() {
-	var inputData DateInputParameters
-	var controlString string
-
-	for {
-		select {
-		case inputData = <-dI.DataInput:
-			if len(inputData.Beg) != 0 && len(inputData.End) != 0 {
-				output := dateslice.RangeString(inputData.Beg, inputData.End)
-				for _, od := range output {
-					dI.DataOutput <- od
-				}
-			} else if len(inputData.Beg) != 0 && len(inputData.End) == 0 {
-				output := dateslice.RangeString(inputData.Beg, inputData.Beg)
-				for _, od := range output {
-					dI.DataOutput <- od
-					//dI.DataOutput <- od
-				}
-			} else {
-				fmt.Println("Invalid Date Input")
+	for inputData := range dI.DataInput {
+		if len(inputData.Beg) != 0 && len(inputData.End) != 0 {
+			output := dateslice.RangeString(inputData.Beg, inputData.End)
+			for _, od := range output {
+				dI.DataOutput <- od
 			}
-		case controlString = <-dI.Control.Input:
-			if controlString == "quit" {
-				dI.Control.Output <- "done"
+		} else if len(inputData.Beg) != 0 && len(inputData.End) == 0 {
+			output := dateslice.RangeString(inputData.Beg, inputData.Beg)
+			for _, od := range output {
+				dI.DataOutput <- od
 			}
+		} else {
+			fmt.Println("Invalid Date Input")
 		}
 	}
+
+	dI.Control.Output <- "ended"
+}
+
+/*
+Init will create all channels and other initialization needs
+*/
+func (dI *DateInput) Init() error {
+	dI.Control.Input = make(chan string)
+	dI.Control.Output = make(chan string)
+
+	dI.DataOutput = make(chan time.Time, 5)
+
+	return nil
 }

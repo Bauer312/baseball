@@ -17,13 +17,19 @@
 package pipeline
 
 /*
-Controller is the interface that defines the methods for controlling a pipeline stage
+Controller is the interface that defines the methods for controlling a pipeline
 */
 type Controller interface {
 	Start() error
-	Abort() error
-	Quiesce() error
-	Done()
+	End() error
+}
+
+/*
+StageConfig is the interface that defines the methods for configuring
+    the stages of a pipeline
+*/
+type StageConfig interface {
+	Init() error
 }
 
 /*

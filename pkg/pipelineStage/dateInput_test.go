@@ -62,10 +62,9 @@ func TestDateInputBegEnd(t *testing.T) {
 
 	for caseNumber, ex := range begEndTest {
 		var dI DateInput
-		dI.Control.Input = make(chan string)
-		dI.Control.Output = make(chan string)
+		dI.Init()
+		// DataInput channels don't get created automatically
 		dI.DataInput = make(chan DateInputParameters)
-		dI.DataOutput = make(chan time.Time)
 
 		// Start the method under test
 		go dI.ChannelListener()
