@@ -26,9 +26,9 @@ import (
 )
 
 /*
-URLLoad contains the elements of the stage
+DateFile contains the elements of the stage
 */
-type URLLoad struct {
+type DateFile struct {
 	DataInput  chan string
 	DataOutput chan string
 	Control    pipeline.StageControl
@@ -39,18 +39,18 @@ ChannelListener should be run in a goroutine and will receive data on the input 
 	and the input control channel.  The parameters are converted to a slice of time
 	elements and these elements are then sent out over the output channel.
 */
-func (uL *URLLoad) ChannelListener(client *http.Client) {
-	for inputData := range uL.DataInput {
+func (dF *DateFile) ChannelListener(client *http.Client) {
+	for inputData := range dF.DataInput {
 		resp, err := client.Get(inputData)
 		if err != nil {
-			uL.Control.Output <- err.Error()
+			dF.Control.Output <- err.Error()
 		}
-		uL.tokenize(resp)
+		dF.tokenize(resp)
 	}
-	uL.Control.Output <- "ended"
+	dF.Control.Output <- "ended"
 }
 
-func (uL *URLLoad) tokenize(resp *http.Response) {
+func (dF *DateFile) tokenize(resp *http.Response) {
 	defer resp.Body.Close()
 	tokenizer := html.NewTokenizer(resp.Body)
 	for {
@@ -68,7 +68,7 @@ func (uL *URLLoad) tokenize(resp *http.Response) {
 				for _, a := range t.Attr {
 					if a.Key == "href" {
 						if strings.HasPrefix(a.Val, "gid_") {
-							uL.DataOutput <- a.Val
+							dF.DataOutput <- a.Val
 						}
 						break
 					}
@@ -83,11 +83,11 @@ Init will create all channels and other initialization needs.
 	The DataInput channel is the output of any previous
 	pipeline stage so it shouldn't be created here
 */
-func (uL *URLLoad) Init() error {
-	uL.Control.Input = make(chan string)
-	uL.Control.Output = make(chan string)
+func (dF *DateFile) Init() error {
+	dF.Control.Input = make(chan string)
+	dF.Control.Output = make(chan string)
 
-	uL.DataOutput = make(chan string, 5)
+	dF.DataOutput = make(chan string, 5)
 
 	return nil
 }

@@ -18,7 +18,7 @@ package pipelineStage
 
 import "testing"
 
-func TestURLLoad(t *testing.T) {
+func TestLoadingDateFile(t *testing.T) {
 	var testURL = []struct {
 		InputData  URLLoadParameters
 		OutputData string

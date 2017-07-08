@@ -32,7 +32,7 @@ BaseballPipeline implements the pipeline interface and contains all of the
 type BaseballPipeline struct {
 	dI pipelineStage.DateInput
 	dC pipelineStage.DateConvert
-	uL pipelineStage.URLLoad
+	uL pipelineStage.DateFile
 }
 
 /*
