@@ -19,6 +19,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/Bauer312/baseball/pkg/pipelineStage"
@@ -32,7 +33,8 @@ BaseballPipeline implements the pipeline interface and contains all of the
 type BaseballPipeline struct {
 	dI pipelineStage.DateInput
 	dC pipelineStage.DateConvert
-	uL pipelineStage.DateFile
+	dF pipelineStage.DateFile
+	wg sync.WaitGroup
 }
 
 /*
@@ -47,24 +49,28 @@ func (bp *BaseballPipeline) Start() error {
 	bp.dC.Init()
 	bp.dC.DataInput = bp.dI.DataOutput
 
-	bp.uL.Init()
-	bp.uL.DataInput = bp.dC.DataOutput
+	bp.dF.Init()
+	bp.dF.DataInput = bp.dC.DataOutput
 
 	// Start the pipelines in reverse order (why?)
-	go bp.uL.ChannelListener(&http.Client{Timeout: (10 * time.Second)})
+	go bp.dF.ChannelListener(&http.Client{Timeout: (10 * time.Second)})
 	go bp.dC.ChannelListener("http://gd2.mlb.com/components/game/mlb")
 	go bp.dI.ChannelListener()
 
 	// Listen for the final stage to send output
-	go func() {
-		for {
-			output := <-bp.uL.DataOutput
-			fmt.Println(output)
-		}
-
-	}()
+	go bp.PrintData()
 
 	return nil
+}
+
+/*
+PrintData will print the final output to the screen
+*/
+func (bp *BaseballPipeline) PrintData() {
+	for output := range bp.dF.DataOutput {
+		fmt.Println(output)
+	}
+	bp.wg.Done()
 }
 
 /*
@@ -72,16 +78,18 @@ End means that no more data will be sent into this pipeline
 */
 func (bp *BaseballPipeline) End() error {
 	//Stop the dateInput stage
-	close(bp.dI.DataInput)
-	<-bp.dI.Control.Output
+	bp.dI.Stop()
 
 	//Stop the dateConvert stage
-	close(bp.dC.DataInput)
-	<-bp.dC.Control.Output
+	bp.dC.Stop()
 
 	//Stop the urlLoad stage
-	close(bp.uL.DataInput)
-	<-bp.uL.Control.Output
+	bp.dF.Stop()
+
+	//Stop the PrintData function
+	bp.wg.Add(1)
+	close(bp.dF.DataOutput)
+	bp.wg.Wait()
 
 	fmt.Println("The baseball pipeline has shut down")
 

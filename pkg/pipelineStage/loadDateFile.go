@@ -17,12 +17,12 @@
 package pipelineStage
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 
 	"golang.org/x/net/html"
-
-	"github.com/Bauer312/baseball/pkg/pipeline"
 )
 
 /*
@@ -31,7 +31,8 @@ DateFile contains the elements of the stage
 type DateFile struct {
 	DataInput  chan string
 	DataOutput chan string
-	Control    pipeline.StageControl
+	wg         sync.WaitGroup
+	rwg        sync.WaitGroup
 }
 
 /*
@@ -41,13 +42,17 @@ ChannelListener should be run in a goroutine and will receive data on the input 
 */
 func (dF *DateFile) ChannelListener(client *http.Client) {
 	for inputData := range dF.DataInput {
+		dF.rwg.Add(1)
 		resp, err := client.Get(inputData)
 		if err != nil {
-			dF.Control.Output <- err.Error()
+			fmt.Println(err.Error())
 		}
 		dF.tokenize(resp)
 	}
-	dF.Control.Output <- "ended"
+	dF.rwg.Wait()
+
+	//Tell the pipeline we are done
+	dF.wg.Done()
 }
 
 func (dF *DateFile) tokenize(resp *http.Response) {
@@ -59,6 +64,7 @@ func (dF *DateFile) tokenize(resp *http.Response) {
 		switch {
 		case token == html.ErrorToken:
 			//The end of the file
+			dF.rwg.Done()
 			return
 		case token == html.StartTagToken:
 			t := tokenizer.Token()
@@ -84,10 +90,16 @@ Init will create all channels and other initialization needs.
 	pipeline stage so it shouldn't be created here
 */
 func (dF *DateFile) Init() error {
-	dF.Control.Input = make(chan string)
-	dF.Control.Output = make(chan string)
-
+	dF.wg.Add(1)
 	dF.DataOutput = make(chan string, 5)
 
 	return nil
+}
+
+/*
+Stop will close the input channel, causing the Channel Listener to stop
+*/
+func (dF *DateFile) Stop() {
+	close(dF.DataInput)
+	dF.wg.Wait()
 }

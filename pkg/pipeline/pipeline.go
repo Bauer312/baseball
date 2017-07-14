@@ -31,12 +31,3 @@ StageConfig is the interface that defines the methods for configuring
 type StageConfig interface {
 	Init() error
 }
-
-/*
-StageControl is a structure that contains an input and an output control
-    channel to be used for controlling each stage of the pipeline
-*/
-type StageControl struct {
-	Input  chan string
-	Output chan string
-}

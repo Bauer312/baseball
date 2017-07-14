@@ -94,15 +94,15 @@ func TestDateInputBegEnd(t *testing.T) {
 			default:
 				break
 			}
-
-			// All data has been received, go ahead and send the signal that will cause the method under test to return
-			dI.Control.Input <- "quit"
 		}()
 
 		// Send the input data to the input channel
 		dI.DataInput <- ex.InputData
 
-		// Wait until the method under test returns
+		// Terminate by closing the data input channel
+		close(dI.DataInput)
+
+		// Wait for acknowledgment
 		<-dI.Control.Output
 	}
 }

@@ -18,9 +18,8 @@ package pipelineStage
 
 import (
 	"fmt"
+	"sync"
 	"time"
-
-	"github.com/Bauer312/baseball/pkg/pipeline"
 )
 
 /*
@@ -29,7 +28,7 @@ DateConvert contains the elements of the stage
 type DateConvert struct {
 	DataInput  chan time.Time
 	DataOutput chan string
-	Control    pipeline.StageControl
+	wg         sync.WaitGroup
 }
 
 /*
@@ -44,8 +43,8 @@ func (dC *DateConvert) ChannelListener(baseURL string) {
 		day := inputDate.Day()
 		dC.DataOutput <- fmt.Sprintf("%s/year_%04d/month_%02d/day_%02d/", baseURL, year, month, day)
 	}
-
-	dC.Control.Output <- "ended"
+	// Tell the pipeline that this stage has finished
+	dC.wg.Done()
 }
 
 /*
@@ -54,10 +53,16 @@ Init will create all channels and other initialization needs.
 	pipeline stage so it shouldn't be created here
 */
 func (dC *DateConvert) Init() error {
-	dC.Control.Input = make(chan string)
-	dC.Control.Output = make(chan string)
-
+	dC.wg.Add(1)
 	dC.DataOutput = make(chan string, 5)
 
 	return nil
+}
+
+/*
+Stop will close the input channel, causing the Channel Listener to stop
+*/
+func (dC *DateConvert) Stop() {
+	close(dC.DataInput)
+	dC.wg.Wait()
 }

@@ -18,10 +18,10 @@ package pipelineStage
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/Bauer312/baseball/pkg/dateslice"
-	"github.com/Bauer312/baseball/pkg/pipeline"
 )
 
 /*
@@ -38,7 +38,7 @@ DateInput contains the elements of the stage
 type DateInput struct {
 	DataInput  chan DateInputParameters
 	DataOutput chan time.Time
-	Control    pipeline.StageControl
+	wg         sync.WaitGroup
 }
 
 /*
@@ -63,17 +63,24 @@ func (dI *DateInput) ChannelListener() {
 		}
 	}
 
-	dI.Control.Output <- "ended"
+	//Tell the pipeline that this stage has finished
+	dI.wg.Done()
 }
 
 /*
 Init will create all channels and other initialization needs
 */
 func (dI *DateInput) Init() error {
-	dI.Control.Input = make(chan string)
-	dI.Control.Output = make(chan string)
-
+	dI.wg.Add(1)
 	dI.DataOutput = make(chan time.Time, 5)
 
 	return nil
+}
+
+/*
+Stop will close the input channel, causing the Channel Listener to stop
+*/
+func (dI *DateInput) Stop() {
+	close(dI.DataInput)
+	dI.wg.Wait()
 }

@@ -24,7 +24,7 @@ import (
 func TestDateConversion(t *testing.T) {
 	var conversionTest = []struct {
 		InputData  []time.Time
-		OutputData []URLLoadParameters
+		OutputData []string
 		BaseURL    string
 	}{
 		{
@@ -32,9 +32,9 @@ func TestDateConversion(t *testing.T) {
 				time.Date(2017, time.January, 1, 5, 0, 0, 0, time.UTC),
 				time.Date(2017, time.January, 2, 5, 0, 0, 0, time.UTC),
 			},
-			[]URLLoadParameters{
-				URLLoadParameters{URL: "http://test.com/a/b/c/year_2017/month_01/day_01/"},
-				URLLoadParameters{URL: "http://test.com/a/b/c/year_2017/month_01/day_02/"},
+			[]string{
+				"http://test.com/a/b/c/year_2017/month_01/day_01/",
+				"http://test.com/a/b/c/year_2017/month_01/day_02/",
 			},
 			"http://test.com/a/b/c",
 		},
@@ -45,11 +45,11 @@ func TestDateConversion(t *testing.T) {
 				time.Date(2017, time.May, 31, 5, 0, 0, 0, time.UTC),
 				time.Date(2017, time.June, 1, 5, 0, 0, 0, time.UTC),
 			},
-			[]URLLoadParameters{
-				URLLoadParameters{URL: "http://test.com/a/b/c/year_2017/month_05/day_29/"},
-				URLLoadParameters{URL: "http://test.com/a/b/c/year_2017/month_05/day_30/"},
-				URLLoadParameters{URL: "http://test.com/a/b/c/year_2017/month_05/day_31/"},
-				URLLoadParameters{URL: "http://test.com/a/b/c/year_2017/month_06/day_01/"},
+			[]string{
+				"http://test.com/a/b/c/year_2017/month_05/day_29/",
+				"http://test.com/a/b/c/year_2017/month_05/day_30/",
+				"http://test.com/a/b/c/year_2017/month_05/day_31/",
+				"http://test.com/a/b/c/year_2017/month_06/day_01/",
 			},
 			"http://test.com/a/b/c",
 		},
@@ -65,11 +65,13 @@ func TestDateConversion(t *testing.T) {
 		go dC.ChannelListener(ex.BaseURL)
 
 		// Start the anonymous function that receives the output of the method under test
-		go func(expected []URLLoadParameters) {
+		go func(expected []string) {
 			for i, exOutput := range expected {
 				output := <-dC.DataOutput
-				if output.URL != exOutput.URL {
-					t.Errorf("Output element %d mismatch: expected %s but received %s", i, exOutput.URL, exOutput.URL)
+				if output != exOutput {
+					t.Errorf("Output element %d mismatch: expected %s but received %s", i, exOutput, output)
+				} else {
+					t.Logf("Output element %d matched: %s == %s", i, exOutput, output)
 				}
 			}
 
@@ -83,15 +85,15 @@ func TestDateConversion(t *testing.T) {
 			default:
 				break
 			}
-
-			// All data has been received, go ahead and send the signal that will cause the method under test to return
-			dC.Control.Input <- "quit"
 		}(ex.OutputData)
 
 		// Send the input data to the input channel
 		for _, data := range ex.InputData {
 			dC.DataInput <- data
 		}
+
+		// Terminate by closing the data input channel
+		close(dC.DataInput)
 
 		// Wait until the method under test returns
 		<-dC.Control.Output

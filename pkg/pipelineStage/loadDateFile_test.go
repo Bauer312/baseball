@@ -16,46 +16,53 @@
 
 package pipelineStage
 
-import "testing"
+import (
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
+)
 
 func TestLoadingDateFile(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, "Hello, client")
+	}))
+	defer ts.Close()
+
 	var testURL = []struct {
-		InputData  URLLoadParameters
+		InputData  string
 		OutputData string
 	}{
 		{
-			InputData:  URLLoadParameters{URL: "http://www.test.com/a/b/c/year_2017/month_01/day_01/"},
-			OutputData: "http://www.test.com/a/b/c/year_2017/month_01/day_01/",
-		},
-		{
-			InputData:  URLLoadParameters{URL: "http://www.test.com/a/b/c/year_2017/month_01/day_02/"},
-			OutputData: "http://www.test.com/a/b/c/year_2017/month_01/day_02/",
+			InputData:  ts.URL,
+			OutputData: "Hello, client",
 		},
 	}
 
 	for _, ex := range testURL {
-		var uL URLLoad
-		uL.Init()
+		var dF DateFile
+		dF.Init()
 		// DataInput channels don't get created automatically
-		uL.DataInput = make(chan URLLoadParameters)
+		dF.DataInput = make(chan string)
 
-		go uL.ChannelListener()
+		go dF.ChannelListener(&http.Client{Timeout: (10 * time.Second)})
 
 		// Start the anonymous function that receives the output of the method under test
 		go func(expected string) {
-			output := <-uL.DataOutput
+			output := <-dF.DataOutput
 			if output != expected {
-				t.Errorf("Output mismatch: Expected %s but received %s\n", output, expected)
+				t.Errorf("Output mismatch: Expected %s but received %s\n", expected, output)
+			} else {
+				t.Logf("Output matched: %s == %s", expected, output)
 			}
-
-			// All data has been received, go ahead and send the signal that will cause the method under test to return
-			uL.Control.Input <- "quit"
 		}(ex.OutputData)
 
 		// Send the input data to the input channel
-		uL.DataInput <- ex.InputData
+		dF.DataInput <- ex.InputData
 
+		close(dF.DataInput)
 		// Wait until the method under test returns
-		<-uL.Control.Output
+		<-dF.Control.Output
 	}
 }
