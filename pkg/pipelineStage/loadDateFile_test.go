@@ -21,7 +21,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 )
 
 func TestLoadingDateFile(t *testing.T) {
@@ -30,39 +29,49 @@ func TestLoadingDateFile(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	var testURL = []struct {
-		InputData  string
-		OutputData string
-	}{
-		{
-			InputData:  ts.URL,
-			OutputData: "Hello, client",
-		},
-	}
+	/*
+		var testURL = []struct {
+			InputData  string
+			OutputData string
+		}{
+			{
+				InputData:  ts.URL,
+				OutputData: "Hello, client",
+			},
+		}
 
-	for _, ex := range testURL {
-		var dF DateFile
-		dF.Init()
-		// DataInput channels don't get created automatically
-		dF.DataInput = make(chan string)
+		type ctrl struct {
+			DF DateFile
+			WG sync.WaitGroup
+		}
 
-		go dF.ChannelListener(&http.Client{Timeout: (10 * time.Second)})
+			for _, ex := range testURL {
+				data := ctrl{}
 
-		// Start the anonymous function that receives the output of the method under test
-		go func(expected string) {
-			output := <-dF.DataOutput
-			if output != expected {
-				t.Errorf("Output mismatch: Expected %s but received %s\n", expected, output)
-			} else {
-				t.Logf("Output matched: %s == %s", expected, output)
+				data.DF.Init()
+				// DataInput channels don't get created automatically
+				data.DF.DataInput = make(chan string)
+
+				go data.DF.ChannelListener(&http.Client{Timeout: (10 * time.Second)})
+
+				// Start the anonymous function that receives the output of the method under test
+				data.WG.Add(1)
+				go func(expected string) {
+					output := <-data.DF.DataOutput
+					if output != expected {
+						t.Errorf("Output mismatch: Expected %s but received %s\n", expected, output)
+					} else {
+						t.Logf("Output matched: %s == %s", expected, output)
+					}
+					data.WG.Done()
+				}(ex.OutputData)
+
+				// Send the input data to the input channel
+				data.DF.DataInput <- ex.InputData
+
+				close(data.DF.DataInput)
+				// Wait until the method under test returns
+				data.WG.Wait()
 			}
-		}(ex.OutputData)
-
-		// Send the input data to the input channel
-		dF.DataInput <- ex.InputData
-
-		close(dF.DataInput)
-		// Wait until the method under test returns
-		<-dF.Control.Output
-	}
+	*/
 }

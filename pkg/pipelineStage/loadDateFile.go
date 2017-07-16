@@ -47,7 +47,7 @@ func (dF *DateFile) ChannelListener(client *http.Client) {
 		if err != nil {
 			fmt.Println(err.Error())
 		}
-		dF.tokenize(resp)
+		dF.tokenize(inputData, resp)
 	}
 	dF.rwg.Wait()
 
@@ -55,7 +55,7 @@ func (dF *DateFile) ChannelListener(client *http.Client) {
 	dF.wg.Done()
 }
 
-func (dF *DateFile) tokenize(resp *http.Response) {
+func (dF *DateFile) tokenize(url string, resp *http.Response) {
 	defer resp.Body.Close()
 	tokenizer := html.NewTokenizer(resp.Body)
 	for {
@@ -74,7 +74,8 @@ func (dF *DateFile) tokenize(resp *http.Response) {
 				for _, a := range t.Attr {
 					if a.Key == "href" {
 						if strings.HasPrefix(a.Val, "gid_") {
-							dF.DataOutput <- a.Val
+							output := url + a.Val + "game.xml"
+							dF.DataOutput <- output
 						}
 						break
 					}

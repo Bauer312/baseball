@@ -17,6 +17,7 @@
 package pipelineStage
 
 import (
+	"sync"
 	"testing"
 	"time"
 )
@@ -60,19 +61,26 @@ func TestDateInputBegEnd(t *testing.T) {
 		},
 	}
 
+	type ctrl struct {
+		DI DateInput
+		WG sync.WaitGroup
+	}
+
 	for caseNumber, ex := range begEndTest {
-		var dI DateInput
-		dI.Init()
+		data := ctrl{}
+
+		data.DI.Init()
 		// DataInput channels don't get created automatically
-		dI.DataInput = make(chan DateInputParameters)
+		data.DI.DataInput = make(chan DateInputParameters)
 
 		// Start the method under test
-		go dI.ChannelListener()
+		go data.DI.ChannelListener()
 
 		// Start the anonymous function that receives the output of the method under test
+		data.WG.Add(1)
 		go func() {
 			for i, exOutput := range ex.OutputData {
-				output := <-dI.DataOutput
+				output := <-data.DI.DataOutput
 				if output.Year() != exOutput.Year() {
 					t.Errorf("Output element %d year mismatch: expected %d but received %d", i, exOutput.Year(), output.Year())
 				}
@@ -86,7 +94,7 @@ func TestDateInputBegEnd(t *testing.T) {
 
 			//Check to ensure that the output channel is empty
 			select {
-			case <-dI.DataOutput:
+			case <-data.DI.DataOutput:
 				t.Errorf("Test Case %d received too many elements: expected %d but received at least %d",
 					caseNumber,
 					len(ex.OutputData),
@@ -94,15 +102,16 @@ func TestDateInputBegEnd(t *testing.T) {
 			default:
 				break
 			}
+			data.WG.Done()
 		}()
 
 		// Send the input data to the input channel
-		dI.DataInput <- ex.InputData
+		data.DI.DataInput <- ex.InputData
 
 		// Terminate by closing the data input channel
-		close(dI.DataInput)
+		close(data.DI.DataInput)
 
-		// Wait for acknowledgment
-		<-dI.Control.Output
+		//Wait until the anon function returns
+		data.WG.Wait()
 	}
 }

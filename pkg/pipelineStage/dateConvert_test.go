@@ -17,6 +17,7 @@
 package pipelineStage
 
 import (
+	"sync"
 	"testing"
 	"time"
 )
@@ -55,19 +56,22 @@ func TestDateConversion(t *testing.T) {
 		},
 	}
 
+	type ctrl struct {
+		DC DateConvert
+		WG sync.WaitGroup
+	}
+
 	for caseNumber, ex := range conversionTest {
-		var dC DateConvert
-		dC.Init()
-		// DataInput channels don't get created automatically
-		dC.DataInput = make(chan time.Time)
+		data := ctrl{}
 
-		// Start the method under test
-		go dC.ChannelListener(ex.BaseURL)
+		data.DC.Init()
+		data.DC.DataInput = make(chan time.Time)
+		go data.DC.ChannelListener(ex.BaseURL)
+		data.WG.Add(1)
 
-		// Start the anonymous function that receives the output of the method under test
 		go func(expected []string) {
 			for i, exOutput := range expected {
-				output := <-dC.DataOutput
+				output := <-data.DC.DataOutput
 				if output != exOutput {
 					t.Errorf("Output element %d mismatch: expected %s but received %s", i, exOutput, output)
 				} else {
@@ -77,7 +81,7 @@ func TestDateConversion(t *testing.T) {
 
 			//Check to ensure that the output channel is empty
 			select {
-			case <-dC.DataOutput:
+			case <-data.DC.DataOutput:
 				t.Errorf("Test Case %d received too many elements: expected %d but received at least %d",
 					caseNumber,
 					len(expected),
@@ -85,17 +89,18 @@ func TestDateConversion(t *testing.T) {
 			default:
 				break
 			}
+			data.WG.Done()
 		}(ex.OutputData)
 
 		// Send the input data to the input channel
-		for _, data := range ex.InputData {
-			dC.DataInput <- data
+		for _, dataComponent := range ex.InputData {
+			data.DC.DataInput <- dataComponent
 		}
 
 		// Terminate by closing the data input channel
-		close(dC.DataInput)
+		close(data.DC.DataInput)
 
 		// Wait until the method under test returns
-		<-dC.Control.Output
+		data.WG.Wait()
 	}
 }
