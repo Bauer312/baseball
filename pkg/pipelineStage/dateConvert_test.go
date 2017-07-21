@@ -97,10 +97,8 @@ func TestDateConversion(t *testing.T) {
 			data.DC.DataInput <- dataComponent
 		}
 
-		// Terminate by closing the data input channel
-		close(data.DC.DataInput)
+		data.DC.Stop()
 
-		// Wait until the method under test returns
 		data.WG.Wait()
 	}
 }

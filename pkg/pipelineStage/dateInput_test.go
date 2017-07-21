@@ -108,8 +108,7 @@ func TestDateInputBegEnd(t *testing.T) {
 		// Send the input data to the input channel
 		data.DI.DataInput <- ex.InputData
 
-		// Terminate by closing the data input channel
-		close(data.DI.DataInput)
+		data.DI.Stop()
 
 		//Wait until the anon function returns
 		data.WG.Wait()

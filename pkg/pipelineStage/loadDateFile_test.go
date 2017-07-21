@@ -20,7 +20,9 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
+	"time"
 )
 
 func TestLoadingDateFile(t *testing.T) {
@@ -29,49 +31,48 @@ func TestLoadingDateFile(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	/*
-		var testURL = []struct {
-			InputData  string
-			OutputData string
-		}{
-			{
-				InputData:  ts.URL,
-				OutputData: "Hello, client",
-			},
-		}
+	var testURL = []struct {
+		InputData  string
+		OutputData string
+	}{
+		{
+			InputData:  ts.URL,
+			OutputData: "Hello, client",
+		},
+	}
 
-		type ctrl struct {
-			DF DateFile
-			WG sync.WaitGroup
-		}
+	type ctrl struct {
+		DF DateFile
+		WG sync.WaitGroup
+	}
 
-			for _, ex := range testURL {
-				data := ctrl{}
+	for _, ex := range testURL {
+		data := ctrl{}
 
-				data.DF.Init()
-				// DataInput channels don't get created automatically
-				data.DF.DataInput = make(chan string)
+		data.DF.Init()
+		// DataInput channels don't get created automatically
+		data.DF.DataInput = make(chan string)
 
-				go data.DF.ChannelListener(&http.Client{Timeout: (10 * time.Second)})
+		go data.DF.ChannelListener(&http.Client{Timeout: (1 * time.Second)})
 
-				// Start the anonymous function that receives the output of the method under test
-				data.WG.Add(1)
-				go func(expected string) {
-					output := <-data.DF.DataOutput
-					if output != expected {
-						t.Errorf("Output mismatch: Expected %s but received %s\n", expected, output)
-					} else {
-						t.Logf("Output matched: %s == %s", expected, output)
-					}
-					data.WG.Done()
-				}(ex.OutputData)
+		// Start the anonymous function that receives the output of the method under test
+		/*
+			data.WG.Add(1)
+			go func() {
+				output := <-data.DF.DataOutput
+				if output != ex.OutputData {
+					t.Errorf("Output mismatch: Expected %s but received %s\n", ex.OutputData, output)
+				} else {
+					t.Logf("Output matched: %s == %s", ex.OutputData, output)
+				}
+				data.WG.Done()
+			}()
+		*/
 
-				// Send the input data to the input channel
-				data.DF.DataInput <- ex.InputData
+		// Send the input data to the input channel
+		data.DF.DataInput <- ex.InputData
 
-				close(data.DF.DataInput)
-				// Wait until the method under test returns
-				data.WG.Wait()
-			}
-	*/
+		data.DF.Stop()
+	}
+
 }
