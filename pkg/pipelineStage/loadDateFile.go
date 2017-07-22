@@ -19,6 +19,7 @@ package pipelineStage
 import (
 	"fmt"
 	"net/http"
+	"path"
 	"strings"
 	"sync"
 
@@ -74,8 +75,12 @@ func (dF *DateFile) tokenize(url string, resp *http.Response) {
 				for _, a := range t.Attr {
 					if a.Key == "href" {
 						if strings.HasPrefix(a.Val, "gid_") {
-							output := url + a.Val + "game.xml"
-							dF.DataOutput <- output
+							gidPath := path.Join(url, a.Val)
+							dF.DataOutput <- gidPath
+							gamePath := path.Join(gidPath, "game.xml")
+							dF.DataOutput <- gamePath
+							gameEventsPath := path.Join(gidPath, "game_events.xml")
+							dF.DataOutput <- gameEventsPath
 						}
 						break
 					}

@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"path"
 	"sync"
 	"testing"
 	"time"
@@ -27,17 +28,24 @@ import (
 
 func TestLoadingDateFile(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, "Hello, client")
+		fmt.Fprintln(w, "<!DOCTYPE html><html><head></head><body>")
+		fmt.Fprintln(w, "<a href=\"gid_test\">gid_test</a>")
+		fmt.Fprintln(w, "</body></html>")
+		return
 	}))
 	defer ts.Close()
 
 	var testURL = []struct {
 		InputData  string
-		OutputData string
+		OutputData []string
 	}{
 		{
-			InputData:  ts.URL,
-			OutputData: "Hello, client",
+			InputData: ts.URL,
+			OutputData: []string{
+				path.Join(ts.URL, "gid_test"),
+				path.Join(ts.URL, "gid_test/game.xml"),
+				path.Join(ts.URL, "gid_test/game_events.xml"),
+			},
 		},
 	}
 
@@ -52,27 +60,28 @@ func TestLoadingDateFile(t *testing.T) {
 		data.DF.Init()
 		// DataInput channels don't get created automatically
 		data.DF.DataInput = make(chan string)
-
-		go data.DF.ChannelListener(&http.Client{Timeout: (1 * time.Second)})
+		go data.DF.ChannelListener(&http.Client{Timeout: (3 * time.Second)})
 
 		// Start the anonymous function that receives the output of the method under test
-		/*
-			data.WG.Add(1)
-			go func() {
+		data.WG.Add(1)
+		go func(expected []string) {
+			for i, exOutput := range expected {
 				output := <-data.DF.DataOutput
-				if output != ex.OutputData {
-					t.Errorf("Output mismatch: Expected %s but received %s\n", ex.OutputData, output)
+				if output != exOutput {
+					t.Errorf("Output element %d mismatch: expected %s but received %s", i, exOutput, output)
 				} else {
-					t.Logf("Output matched: %s == %s", ex.OutputData, output)
+					t.Logf("Output element %d matched: %s == %s", i, exOutput, output)
 				}
-				data.WG.Done()
-			}()
-		*/
+			}
+			data.WG.Done()
+		}(ex.OutputData)
 
 		// Send the input data to the input channel
 		data.DF.DataInput <- ex.InputData
 
 		data.DF.Stop()
+
+		data.WG.Wait()
 	}
 
 }
