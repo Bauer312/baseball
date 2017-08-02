@@ -19,7 +19,6 @@ package pipelineStage
 import (
 	"fmt"
 	"net/http"
-	"path"
 	"strings"
 	"sync"
 
@@ -30,10 +29,11 @@ import (
 DateFile contains the elements of the stage
 */
 type DateFile struct {
-	DataInput  chan string
-	DataOutput chan string
-	wg         sync.WaitGroup
-	rwg        sync.WaitGroup
+	DataInput      chan string
+	DataOutput     chan string
+	GameFileOutout chan string
+	wg             sync.WaitGroup
+	rwg            sync.WaitGroup
 }
 
 /*
@@ -56,8 +56,13 @@ func (dF *DateFile) ChannelListener(client *http.Client) {
 	dF.wg.Done()
 }
 
-func (dF *DateFile) tokenize(url string, resp *http.Response) {
+func (dF *DateFile) tokenize(dataPath string, resp *http.Response) {
 	defer resp.Body.Close()
+
+	if strings.HasSuffix(dataPath, "/") == false {
+		dataPath = dataPath + "/"
+	}
+
 	tokenizer := html.NewTokenizer(resp.Body)
 	for {
 		token := tokenizer.Next()
@@ -75,11 +80,13 @@ func (dF *DateFile) tokenize(url string, resp *http.Response) {
 				for _, a := range t.Attr {
 					if a.Key == "href" {
 						if strings.HasPrefix(a.Val, "gid_") {
-							gidPath := path.Join(url, a.Val)
-							dF.DataOutput <- gidPath
-							gamePath := path.Join(gidPath, "game.xml")
-							dF.DataOutput <- gamePath
-							gameEventsPath := path.Join(gidPath, "game_events.xml")
+							gidPath := dataPath + a.Val
+							if strings.HasSuffix(gidPath, "/") == false {
+								gidPath = gidPath + "/"
+							}
+							gamePath := gidPath + "game.xml"
+							dF.GameFileOutout <- gamePath
+							gameEventsPath := gidPath + "game_events.xml"
 							dF.DataOutput <- gameEventsPath
 						}
 						break
@@ -98,6 +105,7 @@ Init will create all channels and other initialization needs.
 func (dF *DateFile) Init() error {
 	dF.wg.Add(1)
 	dF.DataOutput = make(chan string, 5)
+	dF.GameFileOutout = make(chan string)
 
 	return nil
 }

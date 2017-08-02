@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"path"
 	"sync"
 	"testing"
 	"time"
@@ -36,15 +35,17 @@ func TestLoadingDateFile(t *testing.T) {
 	defer ts.Close()
 
 	var testURL = []struct {
-		InputData  string
-		OutputData []string
+		InputData      string
+		OutputData     []string
+		GameFileOutput []string
 	}{
 		{
 			InputData: ts.URL,
 			OutputData: []string{
-				path.Join(ts.URL, "gid_test"),
-				path.Join(ts.URL, "gid_test/game.xml"),
-				path.Join(ts.URL, "gid_test/game_events.xml"),
+				ts.URL + "/gid_test/game_events.xml",
+			},
+			GameFileOutput: []string{
+				ts.URL + "/gid_test/game.xml",
 			},
 		},
 	}
@@ -75,6 +76,20 @@ func TestLoadingDateFile(t *testing.T) {
 			}
 			data.WG.Done()
 		}(ex.OutputData)
+
+		// Start the anonymous function that receives the GameFile output
+		data.WG.Add(1)
+		go func(expected []string) {
+			for i, exOutput := range expected {
+				output := <-data.DF.GameFileOutout
+				if output != exOutput {
+					t.Errorf("Output element %d mismatch: expected %s but received %s", i, exOutput, output)
+				} else {
+					t.Logf("Output element %d matched: %s == %s", i, exOutput, output)
+				}
+			}
+			data.WG.Done()
+		}(ex.GameFileOutput)
 
 		// Send the input data to the input channel
 		data.DF.DataInput <- ex.InputData

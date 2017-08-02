@@ -22,6 +22,7 @@ Controller is the interface that defines the methods for controlling a pipeline
 type Controller interface {
 	Start() error
 	End() error
+	Abort()
 }
 
 /*

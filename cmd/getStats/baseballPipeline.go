@@ -19,6 +19,10 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"os"
+	"os/user"
+	"path/filepath"
+	"runtime"
 	"sync"
 	"time"
 
@@ -34,6 +38,8 @@ type BaseballPipeline struct {
 	dI pipelineStage.DateInput
 	dC pipelineStage.DateConvert
 	dF pipelineStage.DateFile
+	gF pipelineStage.GameFile
+	fO pipelineStage.FileOutput
 	wg sync.WaitGroup
 }
 
@@ -42,6 +48,15 @@ Start will create and configure all of the stages of the pipeline
 */
 func (bp *BaseballPipeline) Start() error {
 	fmt.Println("Starting the baseball pipeline")
+
+	var basePath string
+	switch runtime.GOOS {
+	case "darwin":
+		usr, _ := user.Current()
+		basePath = filepath.Join(usr.HomeDir, "Library/Application Support/com.13fpl.baseball/")
+	default:
+		basePath = "/var/lib/com.13fpl.baseball/"
+	}
 
 	bp.dI.Init()
 	bp.dI.DataInput = make(chan pipelineStage.DateInputParameters)
@@ -52,8 +67,18 @@ func (bp *BaseballPipeline) Start() error {
 	bp.dF.Init()
 	bp.dF.DataInput = bp.dC.DataOutput
 
+	bp.gF.Init()
+	bp.gF.DataInput = bp.dF.GameFileOutout
+
+	bp.fO.Init(bp.FileNames(basePath))
+	bp.fO.DataInput = bp.gF.DataOutput
+
+	//Reuse the same http client for all requests
+	client := http.Client{Timeout: (10 * time.Second)}
 	// Start the pipelines in reverse order (why?)
-	go bp.dF.ChannelListener(&http.Client{Timeout: (10 * time.Second)})
+	go bp.fO.ChannelListener()
+	go bp.gF.ChannelListener(&client)
+	go bp.dF.ChannelListener(&client)
 	go bp.dC.ChannelListener("http://gd2.mlb.com/components/game/mlb")
 	go bp.dI.ChannelListener()
 
@@ -86,6 +111,12 @@ func (bp *BaseballPipeline) End() error {
 	//Stop the urlLoad stage
 	bp.dF.Stop()
 
+	//Stop the gameFile stage
+	bp.gF.Stop()
+
+	//Stop the fileOutput stage
+	bp.fO.Stop()
+
 	//Stop the PrintData function
 	bp.wg.Add(1)
 	close(bp.dF.DataOutput)
@@ -106,4 +137,39 @@ func (bp *BaseballPipeline) DateRange(beg, end string) error {
 	bp.dI.DataInput <- data
 
 	return nil
+}
+
+/*
+FileNames creates a bunch of file pointers that will be used
+	to output data to files
+*/
+func (bp *BaseballPipeline) FileNames(root string) []pipelineStage.FileName {
+	files := []string{
+		"teamInfo.dat",
+		"gameInfo.dat",
+		"stadiumInfo.dat",
+	}
+	retVal := make([]pipelineStage.FileName, len(files))
+
+	err := os.MkdirAll(root, os.ModePerm)
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+
+	for i, file := range files {
+		newPath := filepath.Join(root, file)
+		fmt.Println(newPath)
+		ptr, err := os.OpenFile(newPath, os.O_CREATE|os.O_APPEND|os.O_RDWR, os.ModePerm)
+		if err != nil {
+			fmt.Println(err)
+			return nil
+		}
+		retVal[i] = pipelineStage.FileName{
+			FileName: file,
+			FilePtr:  ptr,
+		}
+	}
+
+	return retVal
 }
