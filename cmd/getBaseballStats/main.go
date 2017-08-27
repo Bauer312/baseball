@@ -19,46 +19,37 @@ package main
 import (
 	"flag"
 	"fmt"
-	"net/http"
-	"time"
-
-	"github.com/Bauer312/baseball/pkg/dateslice"
-	"github.com/Bauer312/baseball/pkg/util"
 )
 
 func main() {
 	begDt := flag.String("beg", "", "Retrieve all games starting on this date.  Dates are in YYYYMMDD format")
 	endDt := flag.String("end", "", "Retrieve all games ending on this date.  Dates are in YYYYMMDD format")
-	dateString := flag.String("date", "", "Retrieve all games using text such as today, yesterday, thisweek, lastweek")
+	output := flag.String("out", "screen", "Specify where to send data - file, db, or screen.  The default is screen")
 
 	flag.Parse()
 
-	ds := dateslice.DateObjectsToSlice(*dateString, *begDt, *endDt)
+	if len(*begDt) > 0 {
+		if len(*endDt) == 0 {
+			*endDt = *begDt
+		}
 
-	if ds != nil {
-		var rsrc util.Resource
-		var queue util.TransferQueue
-		err := queue.UseClient(&http.Client{
-			Timeout: time.Second * 10,
-		})
+		bp := &BaseballPipeline{}
+		err := bp.Start(*output)
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
-		rsrc.Roots("http://gd2.mlb.com/components/game/mlb", "/usr/local/share/baseball")
-		for _, d := range ds {
-			tDefs, err := rsrc.Date(d)
-			if err != nil {
-				fmt.Println(err)
-			}
 
-			for _, tDef := range tDefs {
-				err = queue.Transfer(tDef)
-				if err != nil {
-					fmt.Println(err)
-				}
-			}
+		err = bp.DateRange(*begDt, *endDt)
+		if err != nil {
+			fmt.Println(err)
+			return
 		}
-		queue.Done()
+
+		err = bp.End()
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
 	}
 }
