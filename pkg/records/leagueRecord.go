@@ -14,21 +14,40 @@
    limitations under the License.
 */
 
-package pipeline
+package records
+
+import (
+	"fmt"
+	"os"
+	"time"
+)
 
 /*
-Controller is the interface that defines the methods for controlling a pipeline
+LeagueRecord is the specific data record for each league
 */
-type Controller interface {
-	Start() error
-	End() error
-	Abort()
+type LeagueRecord struct {
+	RecordName    string
+	EffectiveDate time.Time
+	ID            int64
+	Name          string
+	SportCode     string
 }
 
 /*
-StageConfig is the interface that defines the methods for configuring
-    the stages of a pipeline
+ScreenOutput displays the record on the screen
 */
-type StageConfig interface {
-	Init() error
+func (lR *LeagueRecord) ScreenOutput() {
+	fmt.Println(lR)
+}
+
+/*
+FileOutput displays the record on the screen
+*/
+func (lR *LeagueRecord) FileOutput(filePtr *os.File) {
+	fmt.Fprintf(filePtr, "%s|%d|%s|%s\n",
+		lR.EffectiveDate.Format(time.UnixDate),
+		lR.ID,
+		lR.Name,
+		lR.SportCode,
+	)
 }

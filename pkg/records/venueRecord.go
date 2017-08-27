@@ -14,41 +14,42 @@
    limitations under the License.
 */
 
-package main
+package records
 
 import (
-	"flag"
 	"fmt"
+	"os"
+	"time"
 )
 
-func main() {
-	begDt := flag.String("beg", "", "Retrieve all games starting on this date.  Dates are in YYYYMMDD format")
-	endDt := flag.String("end", "", "Retrieve all games ending on this date.  Dates are in YYYYMMDD format")
+/*
+VenueRecord is the specific data record for each venue
+*/
+type VenueRecord struct {
+	RecordName    string
+	EffectiveDate time.Time
+	ID            int64
+	Name          string
+	Location      string
+	Channel       string
+}
 
-	flag.Parse()
+/*
+ScreenOutput displays the record on the screen
+*/
+func (vR *VenueRecord) ScreenOutput() {
+	fmt.Println(vR)
+}
 
-	if len(*begDt) > 0 {
-		if len(*endDt) == 0 {
-			*endDt = *begDt
-		}
-
-		bp := &BaseballPipeline{}
-		err := bp.Start()
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
-		err = bp.DateRange(*begDt, *endDt)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
-		err = bp.End()
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-	}
+/*
+FileOutput displays the record on the screen
+*/
+func (vR *VenueRecord) FileOutput(filePtr *os.File) {
+	fmt.Fprintf(filePtr, "%s|%d|%s|%s|%s\n",
+		vR.EffectiveDate.Format(time.UnixDate),
+		vR.ID,
+		vR.Name,
+		vR.Location,
+		vR.Channel,
+	)
 }

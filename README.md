@@ -9,14 +9,6 @@ This is a set of command line tools written in the Go language and licensed unde
 * getStats - This tool downloads and processes the stats for you.  You can specify the date or dates that you want using flags:
     * -beg - the beginning date, in YYYYMMDD format (20170401)
     * -end - the ending date, in YYYYMMDD format (20170401)
-* getDate - This tool downloads the overview page for a date or dates.  You can specify the date or dates that you want using flags:
-    * -date - use words, such as 'today', 'yesterday', 'lastweek'
-    * -beg - beginning date, in YYYYMMDD format (20170401)
-    * -end - ending date, in YYYYMMDD format (20170407)
-* getGames - This tool downloads 4 game detail pages for each game on each date or dates.  The game files are 'game.xml', 'game_events.xml', 'inning_all.xml', and 'inning_hit.xml'.  You can specify the date or dates that you want using flags:
-    * -date - use words, such as 'today', 'yesterday', 'lastweek'
-    * -beg - beginning date, in YYYYMMDD format (20170401)
-    * -end - ending date, in YYYYMMDD format (20170407)
 
 ## Data
 
@@ -28,3 +20,10 @@ The game.xml file contains basic information about each game, such as the time a
 * gameInfo.dat
 * gameTeams.dat
 * gameStadium.dat
+
+##### TODO
+
+* Load the master_scoreboard.xml file for each day and use this as the source for all game data.  I probably don't even need to grab the game.xml file at all.  This appears to have the date and PK for each game, which can be passed to the other game files that don't include these values, such as game_events.xml
+Example: http://gd2.mlb.com/components/game/mlb/year_2017/month_07/day_23/master_scoreboard.xml
+
+* Combine the dateConvert and the dateInput stages into a single stage

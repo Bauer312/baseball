@@ -17,13 +17,9 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
-	"os"
-	"os/user"
-	"path/filepath"
-	"runtime"
-	"sync"
 	"time"
 
 	"github.com/Bauer312/baseball/pkg/pipelineStage"
@@ -35,92 +31,111 @@ BaseballPipeline implements the pipeline interface and contains all of the
     containing baseball stats
 */
 type BaseballPipeline struct {
-	dI pipelineStage.DateInput
-	dC pipelineStage.DateConvert
-	dF pipelineStage.DateFile
-	gF pipelineStage.GameFile
-	fO pipelineStage.FileOutput
-	wg sync.WaitGroup
+	dP         *pipelineStage.DateToPath
+	sB         *pipelineStage.ScoreBoardFile
+	dF         pipelineStage.DateFile
+	gF         pipelineStage.GameFile
+	fO         *pipelineStage.FileOutput
+	sO         *pipelineStage.ScreenOutput
+	outputType string
 }
 
 /*
 Start will create and configure all of the stages of the pipeline
 */
-func (bp *BaseballPipeline) Start() error {
+func (bp *BaseballPipeline) Start(output string) error {
 	fmt.Println("Starting the baseball pipeline")
 
-	var basePath string
-	switch runtime.GOOS {
-	case "darwin":
-		usr, _ := user.Current()
-		basePath = filepath.Join(usr.HomeDir, "Library/Application Support/com.13fpl.baseball/")
+	bp.outputType = output
+	switch bp.outputType {
+	case "screen":
+		fmt.Println("Outputting all data to the screen")
+	case "file":
+		fmt.Println("Outputting all data to text files")
+	case "db":
+		fmt.Println("Outputting all data to the database")
 	default:
-		basePath = "/var/lib/com.13fpl.baseball/"
+		return errors.New("Unrecognized output type: " + bp.outputType)
 	}
 
-	bp.dI.Init()
-	bp.dI.DataInput = make(chan pipelineStage.DateInputParameters)
+	//Reuse the same http client for all requests
+	client := http.Client{Timeout: (10 * time.Second)}
 
-	bp.dC.Init()
-	bp.dC.DataInput = bp.dI.DataOutput
+	bp.dP = &pipelineStage.DateToPath{
+		DataInput: make(chan pipelineStage.DateInputParameters),
+		BaseURL:   "http://gd2.mlb.com",
+	}
+	bp.dP.Init()
+	go bp.dP.Run()
+
+	bp.sB = &pipelineStage.ScoreBoardFile{
+		DataInput: bp.dP.DataOutput,
+		BaseURL:   "http://gd2.mlb.com",
+		Client:    &client,
+	}
+	bp.sB.Init()
+	go bp.sB.Run()
+
+	switch bp.outputType {
+	case "screen":
+		bp.sO = &pipelineStage.ScreenOutput{
+			DataInput: []chan string{
+				bp.sB.GameFileOutout,
+				bp.sB.DataOutput,
+			},
+		}
+		bp.sO.Init()
+		go bp.sO.Run()
+	case "file":
+		bp.fO = &pipelineStage.FileOutput{
+			DataInput: []chan string{
+				bp.sB.GameFileOutout,
+				bp.sB.DataOutput,
+			},
+		}
+		bp.fO.Init()
+		go bp.fO.Run()
+	case "db":
+	default:
+		return errors.New("Unrecognized output type: " + bp.outputType)
+	}
 
 	bp.dF.Init()
-	bp.dF.DataInput = bp.dC.DataOutput
+	//bp.dF.DataInput = bp.dC.DataOutput
 
 	bp.gF.Init()
 	bp.gF.DataInput = bp.dF.GameFileOutout
 
-	bp.fO.Init(bp.FileNames(basePath))
-	bp.fO.DataInput = bp.gF.DataOutput
+	//bp.fO.Init(bp.FileNames(basePath))
+	//bp.fO.Init()
+	//bp.fO.DataInput = bp.gF.DataOutput
 
-	//Reuse the same http client for all requests
-	client := http.Client{Timeout: (10 * time.Second)}
 	// Start the pipelines in reverse order (why?)
-	go bp.fO.ChannelListener()
+	//go bp.fO.ChannelListener()
 	go bp.gF.ChannelListener(&client)
-	go bp.dF.ChannelListener(&client)
-	go bp.dC.ChannelListener("http://gd2.mlb.com/components/game/mlb")
-	go bp.dI.ChannelListener()
-
-	// Listen for the final stage to send output
-	go bp.PrintData()
 
 	return nil
-}
-
-/*
-PrintData will print the final output to the screen
-*/
-func (bp *BaseballPipeline) PrintData() {
-	for output := range bp.dF.DataOutput {
-		fmt.Println(output)
-	}
-	bp.wg.Done()
 }
 
 /*
 End means that no more data will be sent into this pipeline
 */
 func (bp *BaseballPipeline) End() error {
-	//Stop the dateInput stage
-	bp.dI.Stop()
+	bp.dP.Stop()
+	bp.sB.Stop()
 
-	//Stop the dateConvert stage
-	bp.dC.Stop()
-
-	//Stop the urlLoad stage
-	bp.dF.Stop()
+	switch bp.outputType {
+	case "screen":
+		bp.sO.Stop()
+	case "file":
+		bp.fO.Stop()
+	case "db":
+	default:
+		return errors.New("Unrecognized output type: " + bp.outputType)
+	}
 
 	//Stop the gameFile stage
 	bp.gF.Stop()
-
-	//Stop the fileOutput stage
-	bp.fO.Stop()
-
-	//Stop the PrintData function
-	bp.wg.Add(1)
-	close(bp.dF.DataOutput)
-	bp.wg.Wait()
 
 	fmt.Println("The baseball pipeline has shut down")
 
@@ -134,7 +149,7 @@ func (bp *BaseballPipeline) DateRange(beg, end string) error {
 	fmt.Printf("Using a date range of %s - %s\n", beg, end)
 
 	data := pipelineStage.DateInputParameters{Beg: beg, End: end}
-	bp.dI.DataInput <- data
+	bp.dP.DataInput <- data
 
 	return nil
 }
@@ -143,6 +158,7 @@ func (bp *BaseballPipeline) DateRange(beg, end string) error {
 FileNames creates a bunch of file pointers that will be used
 	to output data to files
 */
+/*
 func (bp *BaseballPipeline) FileNames(root string) []pipelineStage.FileName {
 	files := []string{
 		"teamInfo.dat",
@@ -173,3 +189,4 @@ func (bp *BaseballPipeline) FileNames(root string) []pipelineStage.FileName {
 
 	return retVal
 }
+*/
