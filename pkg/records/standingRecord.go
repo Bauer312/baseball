@@ -17,9 +17,12 @@
 package records
 
 import (
+	"database/sql"
 	"fmt"
 	"os"
 	"time"
+
+	pq "github.com/lib/pq"
 )
 
 /*
@@ -32,8 +35,8 @@ type StandingRecord struct {
 	TeamID            int64
 	Wins              int
 	Losses            int
-	GamesBack         float32
-	WildcardGamesBack float32
+	GamesBack         string
+	WildcardGamesBack string
 }
 
 /*
@@ -47,7 +50,7 @@ func (sR *StandingRecord) ScreenOutput() {
 FileOutput displays the record on the screen
 */
 func (sR *StandingRecord) FileOutput(filePtr *os.File) {
-	fmt.Fprintf(filePtr, "%s|%d|%d|%d|%f|%f\n",
+	fmt.Fprintf(filePtr, "%s|%d|%d|%d|%s|%s\n",
 		sR.EffectiveDate.Format(time.UnixDate),
 		sR.TeamID,
 		sR.Wins,
@@ -55,4 +58,47 @@ func (sR *StandingRecord) FileOutput(filePtr *os.File) {
 		sR.GamesBack,
 		sR.WildcardGamesBack,
 	)
+}
+
+/*
+CreateTable will create the requisite database table
+*/
+func (sR *StandingRecord) CreateTable(db *sql.DB) {
+	statement := `CREATE TABLE IF NOT EXISTS StandingRecord (
+		effectiveDate 		timestamp with time zone,
+		teamid 				bigint,
+		wins				int,
+		losses				int,
+		gamesback			varchar(8),
+		wildcardgamesback	varchar(8),
+		PRIMARY KEY (effectiveDate, teamid, wins, losses, gamesback, wildcardgamesback)
+	)`
+
+	_, err := db.Exec(statement)
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+
+/*
+UpdateRecord is the way data gets into the database.  It does not act like
+	the UPSERT command because the effective date field will be different
+	for each record.  Each table in the database will have different rules
+	for how to deal with data records
+*/
+func (sR *StandingRecord) UpdateRecord(db *sql.DB) {
+	/*
+		1.  If this is a unique record, insert it.
+	*/
+	statement := `INSERT INTO StandingRecord VALUES ($1,$2,$3,$4,$5,$6);`
+	_, err := db.Exec(statement, sR.EffectiveDate, sR.TeamID, sR.Wins, sR.Losses, sR.GamesBack, sR.WildcardGamesBack)
+	if err != nil {
+		if pqerr, ok := err.(*pq.Error); ok {
+			if pqerr.Code.Name() != "unique_violation" {
+				fmt.Println("pq error:", pqerr.Code.Name())
+			}
+		} else {
+			fmt.Println(err)
+		}
+	}
 }
