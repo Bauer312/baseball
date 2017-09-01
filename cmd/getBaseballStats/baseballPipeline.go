@@ -22,7 +22,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Bauer312/baseball/pkg/pipelineStage"
+	"github.com/bauer312/baseball/pkg/pipelineStage"
 )
 
 /*

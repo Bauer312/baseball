@@ -21,7 +21,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Bauer312/baseball/pkg/dateslice"
+	"github.com/bauer312/baseball/pkg/dateslice"
 )
 
 /*
