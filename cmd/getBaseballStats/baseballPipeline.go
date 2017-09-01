@@ -33,10 +33,9 @@ BaseballPipeline implements the pipeline interface and contains all of the
 type BaseballPipeline struct {
 	dP         *pipelineStage.DateToPath
 	sB         *pipelineStage.ScoreBoardFile
-	dF         pipelineStage.DateFile
-	gF         pipelineStage.GameFile
 	fO         *pipelineStage.FileOutput
 	sO         *pipelineStage.ScreenOutput
+	dbO        *pipelineStage.DatabaseOutput
 	outputType string
 }
 
@@ -61,6 +60,7 @@ func (bp *BaseballPipeline) Start(output string) error {
 	//Reuse the same http client for all requests
 	client := http.Client{Timeout: (10 * time.Second)}
 
+	//Convert a date range to a set of paths
 	bp.dP = &pipelineStage.DateToPath{
 		DataInput: make(chan pipelineStage.DateInputParameters),
 		BaseURL:   "http://gd2.mlb.com",
@@ -68,6 +68,7 @@ func (bp *BaseballPipeline) Start(output string) error {
 	bp.dP.Init()
 	go bp.dP.Run()
 
+	//Load the scoreboard file represented by a path
 	bp.sB = &pipelineStage.ScoreBoardFile{
 		DataInput: bp.dP.DataOutput,
 		BaseURL:   "http://gd2.mlb.com",
@@ -76,6 +77,7 @@ func (bp *BaseballPipeline) Start(output string) error {
 	bp.sB.Init()
 	go bp.sB.Run()
 
+	//Deal with the output based upon the requested output handling method
 	switch bp.outputType {
 	case "screen":
 		bp.sO = &pipelineStage.ScreenOutput{
@@ -96,23 +98,17 @@ func (bp *BaseballPipeline) Start(output string) error {
 		bp.fO.Init()
 		go bp.fO.Run()
 	case "db":
+		bp.dbO = &pipelineStage.DatabaseOutput{
+			DataInput: []chan string{
+				bp.sB.GameFileOutout,
+				bp.sB.DataOutput,
+			},
+		}
+		bp.dbO.Init()
+		go bp.dbO.Run()
 	default:
 		return errors.New("Unrecognized output type: " + bp.outputType)
 	}
-
-	bp.dF.Init()
-	//bp.dF.DataInput = bp.dC.DataOutput
-
-	bp.gF.Init()
-	bp.gF.DataInput = bp.dF.GameFileOutout
-
-	//bp.fO.Init(bp.FileNames(basePath))
-	//bp.fO.Init()
-	//bp.fO.DataInput = bp.gF.DataOutput
-
-	// Start the pipelines in reverse order (why?)
-	//go bp.fO.ChannelListener()
-	go bp.gF.ChannelListener(&client)
 
 	return nil
 }
@@ -130,12 +126,10 @@ func (bp *BaseballPipeline) End() error {
 	case "file":
 		bp.fO.Stop()
 	case "db":
+		bp.dbO.Stop()
 	default:
 		return errors.New("Unrecognized output type: " + bp.outputType)
 	}
-
-	//Stop the gameFile stage
-	bp.gF.Stop()
 
 	fmt.Println("The baseball pipeline has shut down")
 
@@ -153,40 +147,3 @@ func (bp *BaseballPipeline) DateRange(beg, end string) error {
 
 	return nil
 }
-
-/*
-FileNames creates a bunch of file pointers that will be used
-	to output data to files
-*/
-/*
-func (bp *BaseballPipeline) FileNames(root string) []pipelineStage.FileName {
-	files := []string{
-		"teamInfo.dat",
-		"gameInfo.dat",
-		"stadiumInfo.dat",
-	}
-	retVal := make([]pipelineStage.FileName, len(files))
-
-	err := os.MkdirAll(root, os.ModePerm)
-	if err != nil {
-		fmt.Println(err)
-		return nil
-	}
-
-	for i, file := range files {
-		newPath := filepath.Join(root, file)
-		fmt.Println(newPath)
-		ptr, err := os.OpenFile(newPath, os.O_CREATE|os.O_APPEND|os.O_RDWR, os.ModePerm)
-		if err != nil {
-			fmt.Println(err)
-			return nil
-		}
-		retVal[i] = pipelineStage.FileName{
-			FileName: file,
-			FilePtr:  ptr,
-		}
-	}
-
-	return retVal
-}
-*/

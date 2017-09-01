@@ -17,9 +17,12 @@
 package records
 
 import (
+	"database/sql"
 	"fmt"
 	"os"
 	"time"
+
+	pq "github.com/lib/pq"
 )
 
 /*
@@ -95,4 +98,107 @@ func (gsR *GameStatusRecord) FileOutput(filePtr *os.File) {
 		gsR.AwayTeamSO,
 		gsR.HomeTeamSO,
 	)
+}
+
+/*
+CreateTable will create the requisite database table
+*/
+func (gsR *GameStatusRecord) CreateTable(db *sql.DB) {
+	statement := `CREATE TABLE IF NOT EXISTS GameStatusRecord (
+		effectiveDate 	timestamp with time zone,
+		id 				bigint,
+		status			varchar(128),
+		ind				varchar(8),
+		reason			varchar(128),
+		currentInning	int,
+		topOfInning		boolean,
+		balls			int,
+		strikes			int,
+		outs			int,
+		inningState		varchar(8),
+		note			varchar(128),
+		perfectGame		boolean,
+		noHitter		boolean,
+		awayTeamRuns	int,
+		homeTeamRuns	int,
+		awayTeamHits	int,
+		homeTeamHits	int,
+		awayTeamErrors	int,
+		homeTeamErrors	int,
+		awayTeamHR		int,
+		homeTeamHR		int,
+		awayTeamSB		int,
+		homeTeamSB		int,
+		awayTeamSO		int,
+		homeTeamSO		int,
+		PRIMARY KEY (id)
+	)`
+
+	_, err := db.Exec(statement)
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+
+/*
+UpdateRecord is the way data gets into the database.  It does not act like
+	the UPSERT command because the effective date field will be different
+	for each record.  Each table in the database will have different rules
+	for how to deal with data records
+*/
+func (gsR *GameStatusRecord) UpdateRecord(db *sql.DB) {
+	/*
+		1.  If this is a unique record, insert it.
+		2.  If this is a duplicate record and the effective date is later,
+				update the existing record.
+	*/
+	statement := `INSERT INTO GameStatusRecord VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,
+	$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26);`
+	_, err := db.Exec(statement, gsR.EffectiveDate, gsR.ID, gsR.Status, gsR.Ind, gsR.Reason,
+		gsR.CurrentInning, gsR.TopOfInning, gsR.Balls, gsR.Strikes, gsR.Outs, gsR.InningState,
+		gsR.Note, gsR.PerfectGame, gsR.NoHitter, gsR.AwayTeamRuns, gsR.HomeTeamRuns,
+		gsR.AwayTeamHits, gsR.HomeTeamHits, gsR.AwayTeamErrors, gsR.HomeTeamErrors,
+		gsR.AwayTeamHR, gsR.HomeTeamHR, gsR.AwayTeamSB, gsR.HomeTeamSB,
+		gsR.AwayTeamSO, gsR.HomeTeamSO)
+	if err != nil {
+		if pqerr, ok := err.(*pq.Error); ok {
+			if pqerr.Code.Name() == "unique_violation" {
+				var existingEffectiveDate time.Time
+				statement = `SELECT effectiveDate FROM GameStatusRecord WHERE id=$1;`
+				err = db.QueryRow(statement, gsR.ID).Scan(&existingEffectiveDate)
+				if err != nil {
+					if pqerr, ok := err.(*pq.Error); ok {
+						fmt.Println("pq error:", pqerr.Code.Name())
+					} else {
+						fmt.Println(err)
+					}
+				}
+				if gsR.EffectiveDate.Sub(existingEffectiveDate) > 0 {
+					//The new date is after the existing date, so update the record in the database
+					//fmt.Printf("Existing: %v New: %v --> Replacing record in DB\n", existingEffectiveDate, gsR.EffectiveDate)
+					statement = `UPDATE GameStatusRecord SET effectiveDate=$1, status=$2, ind=$3, reason=$4,
+					currentInning=$5, topOfInning=$6, balls=$7, strikes=$8, outs=$9, inningState=$10, note=$11,
+					perfectGame=$12, noHitter=$13, awayTeamRuns=$14, homeTeamRuns=$15, awayTeamHits=$16,
+					homeTeamHits=$17, awayTeamErrors=$18, homeTeamErrors=$19, awayTeamHR=$20, homeTeamHR=$21,
+					awayTeamSB=$22, homeTeamSB=$23, awayTeamSO=$24, homeTeamSO=$25 WHERE id=$26`
+					_, err := db.Exec(statement, gsR.EffectiveDate, gsR.Status, gsR.Ind, gsR.Reason, gsR.CurrentInning,
+						gsR.TopOfInning, gsR.Balls, gsR.Strikes, gsR.Outs, gsR.InningState, gsR.Note, gsR.PerfectGame,
+						gsR.NoHitter, gsR.AwayTeamRuns, gsR.HomeTeamRuns, gsR.AwayTeamHits, gsR.HomeTeamHits,
+						gsR.AwayTeamErrors, gsR.HomeTeamErrors, gsR.AwayTeamHR, gsR.HomeTeamHR, gsR.AwayTeamSB,
+						gsR.HomeTeamSB, gsR.AwayTeamSO, gsR.HomeTeamSO, gsR.ID)
+					if err != nil {
+						if pqerr, ok := err.(*pq.Error); ok {
+							fmt.Println("pq error:", pqerr.Code.Name())
+						} else {
+							fmt.Println(err)
+						}
+					}
+				}
+			} else {
+				fmt.Println("pq error:", pqerr.Code.Name())
+			}
+		} else {
+			fmt.Println(err)
+		}
+	}
 }

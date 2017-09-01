@@ -112,10 +112,10 @@ type ScoreboardXMLGame struct {
 	DoubleHeaderSW        string                     `xml:"double_header_sw,attr"`
 	GameNumber            int                        `xml:"game_nbr,attr"`
 	TBDFlag               string                     `xml:"tbd_flag,attr"`
-	AwayGamesBack         float32                    `xml:"away_games_back"`
-	HomeGamesBack         float32                    `xml:"home_games_back"`
-	AwayGamesBackWildcard float32                    `xml:"away_games_back_wildcard,attr"`
-	HomeGamesBackWildcard float32                    `xml:"home_games_back_wildcard,attr"`
+	AwayGamesBack         string                     `xml:"away_games_back,attr"`
+	HomeGamesBack         string                     `xml:"home_games_back,attr"`
+	AwayGamesBackWildcard string                     `xml:"away_games_back_wildcard,attr"`
+	HomeGamesBackWildcard string                     `xml:"home_games_back_wildcard,attr"`
 	VenueWChanLoc         string                     `xml:"venue_w_chan_loc,attr"`
 	Location              string                     `xml:"location,attr"`
 	GameDay               string                     `xml:"gameday,attr"`

@@ -16,7 +16,10 @@
 
 package records
 
-import "os"
+import (
+	"database/sql"
+	"os"
+)
 
 /*
 Records defines the methods that all record types must implement
@@ -24,4 +27,6 @@ Records defines the methods that all record types must implement
 type Records interface {
 	ScreenOutput()
 	FileOutput(*os.File)
+	CreateTable(*sql.DB)
+	UpdateRecord(*sql.DB)
 }
