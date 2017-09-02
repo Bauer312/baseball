@@ -19,13 +19,12 @@ package pipelineStage
 import (
 	"database/sql"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"os"
 	"strings"
 	"sync"
 
 	records "github.com/bauer312/baseball/pkg/records"
+	"github.com/bauer312/baseball/pkg/util"
 	//Make sure we can use Postgres
 	_ "github.com/lib/pq"
 )
@@ -48,28 +47,8 @@ func (dbO *DatabaseOutput) Init() error {
 	numChannels := len(dbO.DataInput)
 	dbO.wg.Add(numChannels)
 
-	dbuser, ok := os.LookupEnv("BASEBALL_DB_USER")
-	if ok == false {
-		return errors.New("BASEBALL_DB_USER environment variable is not set")
-	}
-	dbpass, ok := os.LookupEnv("BASEBALL_DB_PASS")
-	if ok == false {
-		return errors.New("BASEBALL_DB_PASS environment variable is not set")
-	}
-	dbname, ok := os.LookupEnv("BASEBALL_DB_NAME")
-	if ok == false {
-		return errors.New("BASEBALL_DB_NAME environment variable is not set")
-	}
-
-	connectionString := fmt.Sprintf("user='%s' password='%s' dbname='%s' sslmode='%s'",
-		dbuser, dbpass, dbname, "disable")
-	db, err := sql.Open("postgres", connectionString)
+	db, err := util.GetDBConnection()
 	if err != nil {
-		return err
-	}
-	err = db.Ping()
-	if err != nil {
-		fmt.Println("Unable to ping the database")
 		return err
 	}
 	dbO.db = db

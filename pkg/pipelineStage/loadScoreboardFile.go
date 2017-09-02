@@ -357,6 +357,8 @@ func (sbF *ScoreBoardFile) tokenize(dataPath string, resp *http.Response) {
 			topOfInning = true
 		case "N":
 			topOfInning = false
+		case "":
+			topOfInning = false
 		default:
 			fmt.Printf("Unexpected top of inning code encountered: %s", game.Status.TopInning)
 			return
@@ -368,6 +370,8 @@ func (sbF *ScoreBoardFile) tokenize(dataPath string, resp *http.Response) {
 			perfectGame = true
 		case "N":
 			perfectGame = false
+		case "":
+			perfectGame = false
 		default:
 			fmt.Printf("Unexpected perfect game code encountered: %s", game.Status.Perfect)
 			return
@@ -378,6 +382,8 @@ func (sbF *ScoreBoardFile) tokenize(dataPath string, resp *http.Response) {
 		case "Y":
 			noHitter = true
 		case "N":
+			noHitter = false
+		case "":
 			noHitter = false
 		default:
 			fmt.Printf("Unexpected no hitter code encountered: %s", game.Status.NoHitter)
