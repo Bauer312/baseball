@@ -27,6 +27,7 @@ import (
 
 func main() {
 	reportDate := flag.String("date", "", "Retrieve a standings report on this date.  Dates are in YYYYMMDD format")
+	output := flag.String("out", "", "Specify where to write data.  The default is the screen")
 
 	flag.Parse()
 
@@ -43,6 +44,10 @@ func main() {
 	}
 	defer db.Close()
 
-	reports.GetStandingsReport(db, time.Now())
-
+	reports.GetStandingsReport(db, time.Now(), "American League", "East", *output)
+	reports.GetStandingsReport(db, time.Now(), "American League", "Central", *output)
+	reports.GetStandingsReport(db, time.Now(), "American League", "West", *output)
+	reports.GetStandingsReport(db, time.Now(), "National League", "East", *output)
+	reports.GetStandingsReport(db, time.Now(), "National League", "Central", *output)
+	reports.GetStandingsReport(db, time.Now(), "National League", "West", *output)
 }
