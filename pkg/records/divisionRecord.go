@@ -82,8 +82,17 @@ func (dR *DivisionRecord) UpdateRecord(db *sql.DB) {
 		2.  If this is a duplicate record and the effective date is earlier,
 				update the existing record.
 	*/
-	statement := `INSERT INTO DivisionRecord VALUES ($1,$2,$3);`
-	_, err := db.Exec(statement, dR.EffectiveDate.UTC(), dR.Name, dR.Code)
+	statement := `SET timezone='UTC';`
+	_, err := db.Exec(statement)
+	if err != nil {
+		if pqerr, ok := err.(*pq.Error); ok {
+			fmt.Println("pq error:", pqerr.Code.Name())
+		} else {
+			fmt.Println(err)
+		}
+	}
+	statement = `INSERT INTO DivisionRecord VALUES ($1,$2,$3);`
+	_, err = db.Exec(statement, dR.EffectiveDate.UTC(), dR.Name, dR.Code)
 	if err != nil {
 		if pqerr, ok := err.(*pq.Error); ok {
 			if pqerr.Code.Name() == "unique_violation" {

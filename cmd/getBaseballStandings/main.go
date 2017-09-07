@@ -19,7 +19,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"time"
 
 	"github.com/bauer312/baseball/pkg/reports"
 	"github.com/bauer312/baseball/pkg/util"
@@ -44,10 +43,10 @@ func main() {
 	}
 	defer db.Close()
 
-	reports.GetStandingsReport(db, time.Now(), "American League", "East", *output)
-	reports.GetStandingsReport(db, time.Now(), "American League", "Central", *output)
-	reports.GetStandingsReport(db, time.Now(), "American League", "West", *output)
-	reports.GetStandingsReport(db, time.Now(), "National League", "East", *output)
-	reports.GetStandingsReport(db, time.Now(), "National League", "Central", *output)
-	reports.GetStandingsReport(db, time.Now(), "National League", "West", *output)
+	reports.GetStandingsReport(db, *reportDate, "American League", "East", *output)
+	reports.GetStandingsReport(db, *reportDate, "American League", "Central", *output)
+	reports.GetStandingsReport(db, *reportDate, "American League", "West", *output)
+	reports.GetStandingsReport(db, *reportDate, "National League", "East", *output)
+	reports.GetStandingsReport(db, *reportDate, "National League", "Central", *output)
+	reports.GetStandingsReport(db, *reportDate, "National League", "West", *output)
 }

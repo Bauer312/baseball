@@ -69,9 +69,10 @@ func (sR *StandingRecord) CreateTable(db *sql.DB) {
 		teamid 				bigint,
 		wins				int,
 		losses				int,
+		gamesplayed			int,
 		gamesback			varchar(8),
 		wildcardgamesback	varchar(8),
-		PRIMARY KEY (effectiveDate, teamid, wins, losses, gamesback, wildcardgamesback)
+		PRIMARY KEY (effectiveDate, teamid, gamesplayed)
 	)`
 
 	_, err := db.Exec(statement)
@@ -90,8 +91,17 @@ func (sR *StandingRecord) UpdateRecord(db *sql.DB) {
 	/*
 		1.  If this is a unique record, insert it.
 	*/
-	statement := `INSERT INTO StandingRecord VALUES ($1,$2,$3,$4,$5,$6);`
-	_, err := db.Exec(statement, sR.EffectiveDate.UTC(), sR.TeamID, sR.Wins, sR.Losses, sR.GamesBack, sR.WildcardGamesBack)
+	statement := `SET timezone='UTC';`
+	_, err := db.Exec(statement)
+	if err != nil {
+		if pqerr, ok := err.(*pq.Error); ok {
+			fmt.Println("pq error:", pqerr.Code.Name())
+		} else {
+			fmt.Println(err)
+		}
+	}
+	statement = `INSERT INTO StandingRecord VALUES ($1,$2,$3,$4,$5,$6,$7);`
+	_, err = db.Exec(statement, sR.EffectiveDate.UTC(), sR.TeamID, sR.Wins, sR.Losses, sR.Wins+sR.Losses, sR.GamesBack, sR.WildcardGamesBack)
 	if err != nil {
 		if pqerr, ok := err.(*pq.Error); ok {
 			if pqerr.Code.Name() != "unique_violation" {

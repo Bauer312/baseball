@@ -121,8 +121,17 @@ func (gR *GameRecord) UpdateRecord(db *sql.DB) {
 		2.  If this is a duplicate record and the effective date is later,
 				update the existing record.
 	*/
-	statement := `INSERT INTO GameRecord VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16);`
-	_, err := db.Exec(statement, gR.EffectiveDate.UTC(), gR.ID, gR.ResumeDate, gR.OriginalDate, gR.GameType,
+	statement := `SET timezone='UTC';`
+	_, err := db.Exec(statement)
+	if err != nil {
+		if pqerr, ok := err.(*pq.Error); ok {
+			fmt.Println("pq error:", pqerr.Code.Name())
+		} else {
+			fmt.Println(err)
+		}
+	}
+	statement = `INSERT INTO GameRecord VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16);`
+	_, err = db.Exec(statement, gR.EffectiveDate.UTC(), gR.ID, gR.ResumeDate, gR.OriginalDate, gR.GameType,
 		gR.Tiebreaker, gR.GameDay, gR.DoubleHeader, gR.GameNumber, gR.TBDFlag, gR.Interleague,
 		gR.ScheduledInnings, gR.Description, gR.VenueID, gR.AwayTeamID, gR.HomeTeamID)
 	if err != nil {

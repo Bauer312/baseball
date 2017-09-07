@@ -152,9 +152,18 @@ func (gsR *GameStatusRecord) UpdateRecord(db *sql.DB) {
 		2.  If this is a duplicate record and the effective date is later,
 				update the existing record.
 	*/
-	statement := `INSERT INTO GameStatusRecord VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,
+	statement := `SET timezone='UTC';`
+	_, err := db.Exec(statement)
+	if err != nil {
+		if pqerr, ok := err.(*pq.Error); ok {
+			fmt.Println("pq error:", pqerr.Code.Name())
+		} else {
+			fmt.Println(err)
+		}
+	}
+	statement = `INSERT INTO GameStatusRecord VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,
 	$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26);`
-	_, err := db.Exec(statement, gsR.EffectiveDate.UTC(), gsR.ID, gsR.Status, gsR.Ind, gsR.Reason,
+	_, err = db.Exec(statement, gsR.EffectiveDate.UTC(), gsR.ID, gsR.Status, gsR.Ind, gsR.Reason,
 		gsR.CurrentInning, gsR.TopOfInning, gsR.Balls, gsR.Strikes, gsR.Outs, gsR.InningState,
 		gsR.Note, gsR.PerfectGame, gsR.NoHitter, gsR.AwayTeamRuns, gsR.HomeTeamRuns,
 		gsR.AwayTeamHits, gsR.HomeTeamHits, gsR.AwayTeamErrors, gsR.HomeTeamErrors,

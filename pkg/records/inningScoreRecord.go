@@ -88,8 +88,17 @@ func (isR *InningScoreRecord) UpdateRecord(db *sql.DB) {
 		2.  If this is a duplicate record and the effective date is later,
 				replace the existing record.
 	*/
-	statement := `INSERT INTO InningScoreRecord VALUES ($1,$2,$3,$4,$5);`
-	_, err := db.Exec(statement, isR.EffectiveDate.UTC(), isR.GameID, isR.Inning, isR.AwayTeamRuns, isR.HomeTeamRuns)
+	statement := `SET timezone='UTC';`
+	_, err := db.Exec(statement)
+	if err != nil {
+		if pqerr, ok := err.(*pq.Error); ok {
+			fmt.Println("pq error:", pqerr.Code.Name())
+		} else {
+			fmt.Println(err)
+		}
+	}
+	statement = `INSERT INTO InningScoreRecord VALUES ($1,$2,$3,$4,$5);`
+	_, err = db.Exec(statement, isR.EffectiveDate.UTC(), isR.GameID, isR.Inning, isR.AwayTeamRuns, isR.HomeTeamRuns)
 	if err != nil {
 		if pqerr, ok := err.(*pq.Error); ok {
 			if pqerr.Code.Name() == "unique_violation" {

@@ -22,7 +22,6 @@ import (
 	"log"
 	"os"
 	"path"
-	"time"
 	//Make sure we can use Postgres
 	_ "github.com/lib/pq"
 )
@@ -42,8 +41,8 @@ type StandingsReport struct {
 GetStandingsReport retrieves data as of the provided date, using the provided
 	database connection.
 */
-func GetStandingsReport(db *sql.DB, asOf time.Time, league, division, output string) {
-	statement := `SELECT tr.name "Name", sr.wins "Wins", sr.losses "Losses"
+func GetStandingsReport(db *sql.DB, asOf, league, division, output string) {
+	statement := `SELECT distinct tr.name "Name", sr.wins "Wins", sr.losses "Losses"
 	FROM StandingRecord sr
 	JOIN TeamRecord tr ON
 	tr.id = sr.teamid
@@ -51,8 +50,8 @@ func GetStandingsReport(db *sql.DB, asOf time.Time, league, division, output str
 	lr.id = tr.leagueid
 	JOIN DivisionRecord dr ON
 	tr.division = dr.code
-	WHERE (sr.effectivedate,sr.teamid) in
-	(SELECT MAX(effectivedate), teamid FROM StandingRecord WHERE effectivedate <= $1 GROUP BY teamid)
+	WHERE (sr.gamesplayed, sr.teamid) in
+	(SELECT MAX(gamesplayed), teamid FROM StandingRecord WHERE effectivedate > $1 GROUP BY teamid)
 	AND lr.name = $2 AND dr.name = $3
 	ORDER BY sr.wins desc;`
 

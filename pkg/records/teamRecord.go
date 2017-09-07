@@ -94,8 +94,17 @@ func (tR *TeamRecord) UpdateRecord(db *sql.DB) {
 		2.  If this is a duplicate record and the effective date is earlier,
 				update the existing record.
 	*/
-	statement := `INSERT INTO TeamRecord VALUES ($1, $2, $3, $4, $5, $6, $7);`
-	_, err := db.Exec(statement, tR.EffectiveDate.UTC(), tR.ID, tR.Name, tR.Code, tR.City, tR.LeagueID, tR.Division)
+	statement := `SET timezone='UTC';`
+	_, err := db.Exec(statement)
+	if err != nil {
+		if pqerr, ok := err.(*pq.Error); ok {
+			fmt.Println("pq error:", pqerr.Code.Name())
+		} else {
+			fmt.Println(err)
+		}
+	}
+	statement = `INSERT INTO TeamRecord VALUES ($1, $2, $3, $4, $5, $6, $7);`
+	_, err = db.Exec(statement, tR.EffectiveDate.UTC(), tR.ID, tR.Name, tR.Code, tR.City, tR.LeagueID, tR.Division)
 	if err != nil {
 		if pqerr, ok := err.(*pq.Error); ok {
 			if pqerr.Code.Name() == "unique_violation" {
