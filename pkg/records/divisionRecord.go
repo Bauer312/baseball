@@ -83,7 +83,7 @@ func (dR *DivisionRecord) UpdateRecord(db *sql.DB) {
 				update the existing record.
 	*/
 	statement := `INSERT INTO DivisionRecord VALUES ($1,$2,$3);`
-	_, err := db.Exec(statement, dR.EffectiveDate, dR.Name, dR.Code)
+	_, err := db.Exec(statement, dR.EffectiveDate.UTC(), dR.Name, dR.Code)
 	if err != nil {
 		if pqerr, ok := err.(*pq.Error); ok {
 			if pqerr.Code.Name() == "unique_violation" {
@@ -98,12 +98,12 @@ func (dR *DivisionRecord) UpdateRecord(db *sql.DB) {
 						fmt.Println(err)
 					}
 				}
-				if existingEffectiveDate.Sub(dR.EffectiveDate) > 0 {
+				if existingEffectiveDate.Sub(dR.EffectiveDate.UTC()) > 0 {
 					//The new date is before the existing date, so update the record in the database
 					//fmt.Printf("Existing: %v New: %v --> Updating record in DB\n", existingEffectiveDate, dR.EffectiveDate)
 					statement = `UPDATE DivisionRecord SET effectiveDate=$1 WHERE
 					name=$2 AND code=$3;`
-					_, err := db.Exec(statement, dR.EffectiveDate, dR.Name, dR.Code)
+					_, err := db.Exec(statement, dR.EffectiveDate.UTC(), dR.Name, dR.Code)
 					if err != nil {
 						if pqerr, ok := err.(*pq.Error); ok {
 							fmt.Println("pq error:", pqerr.Code.Name())

@@ -89,7 +89,7 @@ func (isR *InningScoreRecord) UpdateRecord(db *sql.DB) {
 				replace the existing record.
 	*/
 	statement := `INSERT INTO InningScoreRecord VALUES ($1,$2,$3,$4,$5);`
-	_, err := db.Exec(statement, isR.EffectiveDate, isR.GameID, isR.Inning, isR.AwayTeamRuns, isR.HomeTeamRuns)
+	_, err := db.Exec(statement, isR.EffectiveDate.UTC(), isR.GameID, isR.Inning, isR.AwayTeamRuns, isR.HomeTeamRuns)
 	if err != nil {
 		if pqerr, ok := err.(*pq.Error); ok {
 			if pqerr.Code.Name() == "unique_violation" {
@@ -104,12 +104,12 @@ func (isR *InningScoreRecord) UpdateRecord(db *sql.DB) {
 						fmt.Println(err)
 					}
 				}
-				if isR.EffectiveDate.Sub(existingEffectiveDate) > 0 {
+				if isR.EffectiveDate.UTC().Sub(existingEffectiveDate) > 0 {
 					//The new date is after the existing date, so replace the record in the database
 					//fmt.Printf("Existing: %v New: %v --> Replacing record in DB\n", existingEffectiveDate, isR.EffectiveDate)
 					statement = `UPDATE InningScoreRecord SET effectiveDate=$1, awayteamruns=$2, hometeamruns=$3 WHERE
 					gameid=$4 AND inning=$5;`
-					_, err := db.Exec(statement, isR.EffectiveDate, isR.AwayTeamRuns, isR.HomeTeamRuns, isR.GameID, isR.Inning)
+					_, err := db.Exec(statement, isR.EffectiveDate.UTC(), isR.AwayTeamRuns, isR.HomeTeamRuns, isR.GameID, isR.Inning)
 					if err != nil {
 						if pqerr, ok := err.(*pq.Error); ok {
 							fmt.Println("pq error:", pqerr.Code.Name())

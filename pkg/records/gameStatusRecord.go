@@ -154,7 +154,7 @@ func (gsR *GameStatusRecord) UpdateRecord(db *sql.DB) {
 	*/
 	statement := `INSERT INTO GameStatusRecord VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,
 	$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26);`
-	_, err := db.Exec(statement, gsR.EffectiveDate, gsR.ID, gsR.Status, gsR.Ind, gsR.Reason,
+	_, err := db.Exec(statement, gsR.EffectiveDate.UTC(), gsR.ID, gsR.Status, gsR.Ind, gsR.Reason,
 		gsR.CurrentInning, gsR.TopOfInning, gsR.Balls, gsR.Strikes, gsR.Outs, gsR.InningState,
 		gsR.Note, gsR.PerfectGame, gsR.NoHitter, gsR.AwayTeamRuns, gsR.HomeTeamRuns,
 		gsR.AwayTeamHits, gsR.HomeTeamHits, gsR.AwayTeamErrors, gsR.HomeTeamErrors,
@@ -173,7 +173,7 @@ func (gsR *GameStatusRecord) UpdateRecord(db *sql.DB) {
 						fmt.Println(err)
 					}
 				}
-				if gsR.EffectiveDate.Sub(existingEffectiveDate) > 0 {
+				if gsR.EffectiveDate.UTC().Sub(existingEffectiveDate) > 0 {
 					//The new date is after the existing date, so update the record in the database
 					//fmt.Printf("Existing: %v New: %v --> Replacing record in DB\n", existingEffectiveDate, gsR.EffectiveDate)
 					statement = `UPDATE GameStatusRecord SET effectiveDate=$1, status=$2, ind=$3, reason=$4,
@@ -181,7 +181,7 @@ func (gsR *GameStatusRecord) UpdateRecord(db *sql.DB) {
 					perfectGame=$12, noHitter=$13, awayTeamRuns=$14, homeTeamRuns=$15, awayTeamHits=$16,
 					homeTeamHits=$17, awayTeamErrors=$18, homeTeamErrors=$19, awayTeamHR=$20, homeTeamHR=$21,
 					awayTeamSB=$22, homeTeamSB=$23, awayTeamSO=$24, homeTeamSO=$25 WHERE id=$26`
-					_, err := db.Exec(statement, gsR.EffectiveDate, gsR.Status, gsR.Ind, gsR.Reason, gsR.CurrentInning,
+					_, err := db.Exec(statement, gsR.EffectiveDate.UTC(), gsR.Status, gsR.Ind, gsR.Reason, gsR.CurrentInning,
 						gsR.TopOfInning, gsR.Balls, gsR.Strikes, gsR.Outs, gsR.InningState, gsR.Note, gsR.PerfectGame,
 						gsR.NoHitter, gsR.AwayTeamRuns, gsR.HomeTeamRuns, gsR.AwayTeamHits, gsR.HomeTeamHits,
 						gsR.AwayTeamErrors, gsR.HomeTeamErrors, gsR.AwayTeamHR, gsR.HomeTeamHR, gsR.AwayTeamSB,

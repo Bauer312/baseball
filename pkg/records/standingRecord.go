@@ -91,7 +91,7 @@ func (sR *StandingRecord) UpdateRecord(db *sql.DB) {
 		1.  If this is a unique record, insert it.
 	*/
 	statement := `INSERT INTO StandingRecord VALUES ($1,$2,$3,$4,$5,$6);`
-	_, err := db.Exec(statement, sR.EffectiveDate, sR.TeamID, sR.Wins, sR.Losses, sR.GamesBack, sR.WildcardGamesBack)
+	_, err := db.Exec(statement, sR.EffectiveDate.UTC(), sR.TeamID, sR.Wins, sR.Losses, sR.GamesBack, sR.WildcardGamesBack)
 	if err != nil {
 		if pqerr, ok := err.(*pq.Error); ok {
 			if pqerr.Code.Name() != "unique_violation" {

@@ -90,7 +90,7 @@ func (vR *VenueRecord) UpdateRecord(db *sql.DB) {
 				update the existing record.
 	*/
 	statement := `INSERT INTO VenueRecord VALUES ($1,$2,$3,$4,$5);`
-	_, err := db.Exec(statement, vR.EffectiveDate, vR.ID, vR.Name, vR.Location, vR.Channel)
+	_, err := db.Exec(statement, vR.EffectiveDate.UTC(), vR.ID, vR.Name, vR.Location, vR.Channel)
 	if err != nil {
 		if pqerr, ok := err.(*pq.Error); ok {
 			if pqerr.Code.Name() == "unique_violation" {
@@ -105,12 +105,12 @@ func (vR *VenueRecord) UpdateRecord(db *sql.DB) {
 						fmt.Println(err)
 					}
 				}
-				if existingEffectiveDate.Sub(vR.EffectiveDate) > 0 {
+				if existingEffectiveDate.Sub(vR.EffectiveDate.UTC()) > 0 {
 					//The new date is before the existing date, so update the record in the database
 					//fmt.Printf("Existing: %v New: %v --> Updating record in DB\n", existingEffectiveDate, vR.EffectiveDate)
 					statement = `UPDATE VenueRecord SET effectiveDate=$1 WHERE
 					id=$2 AND name=$3 AND location=$4 AND channel=$5;`
-					_, err := db.Exec(statement, vR.EffectiveDate, vR.ID, vR.Name, vR.Location, vR.Channel)
+					_, err := db.Exec(statement, vR.EffectiveDate.UTC(), vR.ID, vR.Name, vR.Location, vR.Channel)
 					if err != nil {
 						if pqerr, ok := err.(*pq.Error); ok {
 							fmt.Println("pq error:", pqerr.Code.Name())

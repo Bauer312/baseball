@@ -122,7 +122,7 @@ func (gR *GameRecord) UpdateRecord(db *sql.DB) {
 				update the existing record.
 	*/
 	statement := `INSERT INTO GameRecord VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16);`
-	_, err := db.Exec(statement, gR.EffectiveDate, gR.ID, gR.ResumeDate, gR.OriginalDate, gR.GameType,
+	_, err := db.Exec(statement, gR.EffectiveDate.UTC(), gR.ID, gR.ResumeDate, gR.OriginalDate, gR.GameType,
 		gR.Tiebreaker, gR.GameDay, gR.DoubleHeader, gR.GameNumber, gR.TBDFlag, gR.Interleague,
 		gR.ScheduledInnings, gR.Description, gR.VenueID, gR.AwayTeamID, gR.HomeTeamID)
 	if err != nil {
@@ -138,14 +138,14 @@ func (gR *GameRecord) UpdateRecord(db *sql.DB) {
 						fmt.Println(err)
 					}
 				}
-				if gR.EffectiveDate.Sub(existingEffectiveDate) > 0 {
+				if gR.EffectiveDate.UTC().Sub(existingEffectiveDate) > 0 {
 					//The new date is after the existing date, so update the record in the database
 					//fmt.Printf("Existing: %v New: %v --> Replacing record in DB\n", existingEffectiveDate, gR.EffectiveDate)
 					statement = `UPDATE GameRecord SET effectiveDate=$1, resumedate=$2, originaldate=$3,
 					gametype=$4, tiebreaker=$5, gameday=$6, doubleheader=$7, gamenumber=$8, tbdflag=$9,
 					interleague=$10, scheduledinnings=$11, description=$12, venueid=$13, awayteamid=$14,
 					hometeamid=$15 WHERE id=$16;`
-					_, err := db.Exec(statement, gR.EffectiveDate, gR.ResumeDate, gR.OriginalDate, gR.GameType,
+					_, err := db.Exec(statement, gR.EffectiveDate.UTC(), gR.ResumeDate, gR.OriginalDate, gR.GameType,
 						gR.Tiebreaker, gR.GameDay, gR.DoubleHeader, gR.GameNumber, gR.TBDFlag, gR.Interleague,
 						gR.ScheduledInnings, gR.Description, gR.VenueID, gR.AwayTeamID, gR.HomeTeamID, gR.ID)
 					if err != nil {

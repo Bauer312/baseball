@@ -95,7 +95,7 @@ func (tR *TeamRecord) UpdateRecord(db *sql.DB) {
 				update the existing record.
 	*/
 	statement := `INSERT INTO TeamRecord VALUES ($1, $2, $3, $4, $5, $6, $7);`
-	_, err := db.Exec(statement, tR.EffectiveDate, tR.ID, tR.Name, tR.Code, tR.City, tR.LeagueID, tR.Division)
+	_, err := db.Exec(statement, tR.EffectiveDate.UTC(), tR.ID, tR.Name, tR.Code, tR.City, tR.LeagueID, tR.Division)
 	if err != nil {
 		if pqerr, ok := err.(*pq.Error); ok {
 			if pqerr.Code.Name() == "unique_violation" {
@@ -110,12 +110,12 @@ func (tR *TeamRecord) UpdateRecord(db *sql.DB) {
 						fmt.Println(err)
 					}
 				}
-				if existingEffectiveDate.Sub(tR.EffectiveDate) > 0 {
+				if existingEffectiveDate.Sub(tR.EffectiveDate.UTC()) > 0 {
 					//The new date is before the existing date, so update the record in the database
 					//fmt.Printf("Existing: %v New: %v --> Updating record in DB\n", existingEffectiveDate, tR.EffectiveDate)
 					statement = `UPDATE TeamRecord SET effectiveDate=$1 WHERE
 					id=$2 AND name=$3 AND code=$4 AND city=$5 AND leagueid=$6 AND division=$7;`
-					_, err := db.Exec(statement, tR.EffectiveDate, tR.ID, tR.Name, tR.Code, tR.City, tR.LeagueID, tR.Division)
+					_, err := db.Exec(statement, tR.EffectiveDate.UTC(), tR.ID, tR.Name, tR.Code, tR.City, tR.LeagueID, tR.Division)
 					if err != nil {
 						if pqerr, ok := err.(*pq.Error); ok {
 							fmt.Println("pq error:", pqerr.Code.Name())
