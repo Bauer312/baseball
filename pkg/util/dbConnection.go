@@ -39,9 +39,13 @@ func GetDBConnection() (*sql.DB, error) {
 	if ok == false {
 		return nil, errors.New("BASEBALL_DB_NAME environment variable is not set")
 	}
+	dbhost, ok := os.LookupEnv("BASEBALL_DB_HOST")
+	if ok == false {
+		dbhost = "localhost"
+	}
 
-	connectionString := fmt.Sprintf("user='%s' password='%s' dbname='%s' sslmode='%s'",
-		dbuser, dbpass, dbname, "disable")
+	connectionString := fmt.Sprintf("user='%s' password='%s' dbname='%s' host='%s' sslmode='%s'",
+		dbuser, dbpass, dbname, dbhost, "disable")
 	db, err := sql.Open("postgres", connectionString)
 	if err != nil {
 		return nil, err
