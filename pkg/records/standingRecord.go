@@ -72,7 +72,7 @@ func (sR *StandingRecord) CreateTable(db *sql.DB) {
 		gamesplayed			int,
 		gamesback			varchar(8),
 		wildcardgamesback	varchar(8),
-		PRIMARY KEY (effectiveDate, teamid, gamesplayed)
+		PRIMARY KEY (effectiveDate, teamid)
 	)`
 
 	_, err := db.Exec(statement)
@@ -104,7 +104,31 @@ func (sR *StandingRecord) UpdateRecord(db *sql.DB) {
 	_, err = db.Exec(statement, sR.EffectiveDate.UTC(), sR.TeamID, sR.Wins, sR.Losses, sR.Wins+sR.Losses, sR.GamesBack, sR.WildcardGamesBack)
 	if err != nil {
 		if pqerr, ok := err.(*pq.Error); ok {
-			if pqerr.Code.Name() != "unique_violation" {
+			if pqerr.Code.Name() == "unique_violation" {
+				var existingGamesPlayed int
+				statement = `SELECT gamesplayed FROM StandingRecord WHERE effectivedate = $1 AND teamid = $2;`
+				err = db.QueryRow(statement, sR.EffectiveDate.UTC(), sR.TeamID).Scan(&existingGamesPlayed)
+				if err != nil {
+					if pqerr, ok := err.(*pq.Error); ok {
+						fmt.Println("pq error:", pqerr.Code.Name())
+					} else {
+						fmt.Println(err)
+					}
+				}
+				if sR.Wins+sR.Losses > existingGamesPlayed {
+					statement = `UPDATE StandingRecord SET
+					wins = $1, losses = $2, gamesplayed = $3, gamesback = $4, wildcardgamesback = $5
+					WHERE effectivedate = $6 AND teamid = $7;`
+					_, err = db.Exec(statement, sR.Wins, sR.Losses, sR.GamesBack, sR.WildcardGamesBack, sR.Wins+sR.Losses, sR.EffectiveDate.UTC(), sR.TeamID)
+					if err != nil {
+						if pqerr, ok := err.(*pq.Error); ok {
+							fmt.Println("pq error:", pqerr.Code.Name())
+						} else {
+							fmt.Println(err)
+						}
+					}
+				}
+			} else {
 				fmt.Println("pq error:", pqerr.Code.Name())
 			}
 		} else {

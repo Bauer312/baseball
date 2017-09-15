@@ -20,6 +20,7 @@ import (
 	"flag"
 	"fmt"
 
+	"github.com/bauer312/baseball/pkg/dateslice"
 	"github.com/bauer312/baseball/pkg/reports"
 	"github.com/bauer312/baseball/pkg/util"
 )
@@ -30,11 +31,16 @@ func main() {
 
 	flag.Parse()
 
-	if len(*reportDate) > 0 {
-		fmt.Printf("Using %s as the date\n", *reportDate)
-	} else {
-		fmt.Println("Using the most recent date")
+	if len(*reportDate) == 0 {
+		tomorrow := dateslice.Tomorrow()
+		if len(tomorrow) == 1 {
+			*reportDate = tomorrow[0].UTC().Format("2006-01-02")
+		} else {
+			fmt.Println("Unable to get a date from the system.")
+			return
+		}
 	}
+	fmt.Printf("Using %s as the date\n", *reportDate)
 
 	db, err := util.GetDBConnection()
 	if err != nil {
