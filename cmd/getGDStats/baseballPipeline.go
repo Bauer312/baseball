@@ -22,7 +22,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/bauer312/baseball/pkg/pipelineStage"
+	pipelinestage "github.com/bauer312/baseball/pkg/pipelinestage"
 )
 
 /*
@@ -31,11 +31,11 @@ BaseballPipeline implements the pipeline interface and contains all of the
     containing baseball stats
 */
 type BaseballPipeline struct {
-	dP         *pipelineStage.DateToPath
-	sB         *pipelineStage.ScoreBoardFile
-	fO         *pipelineStage.FileOutput
-	sO         *pipelineStage.ScreenOutput
-	dbO        *pipelineStage.DatabaseOutput
+	dP         *pipelinestage.DateToPath
+	sB         *pipelinestage.ScoreBoardFile
+	fO         *pipelinestage.FileOutput
+	sO         *pipelinestage.ScreenOutput
+	dbO        *pipelinestage.DatabaseOutput
 	outputType string
 }
 
@@ -61,15 +61,15 @@ func (bp *BaseballPipeline) Start(output string) error {
 	client := http.Client{Timeout: (10 * time.Second)}
 
 	//Convert a date range to a set of paths
-	bp.dP = &pipelineStage.DateToPath{
-		DataInput: make(chan pipelineStage.DateInputParameters),
+	bp.dP = &pipelinestage.DateToPath{
+		DataInput: make(chan pipelinestage.DateInputParameters),
 		BaseURL:   "http://gd2.mlb.com",
 	}
 	bp.dP.Init()
 	go bp.dP.Run()
 
 	//Load the scoreboard file represented by a path
-	bp.sB = &pipelineStage.ScoreBoardFile{
+	bp.sB = &pipelinestage.ScoreBoardFile{
 		DataInput: bp.dP.DataOutput,
 		BaseURL:   "http://gd2.mlb.com",
 		Client:    &client,
@@ -80,7 +80,7 @@ func (bp *BaseballPipeline) Start(output string) error {
 	//Deal with the output based upon the requested output handling method
 	switch bp.outputType {
 	case "screen":
-		bp.sO = &pipelineStage.ScreenOutput{
+		bp.sO = &pipelinestage.ScreenOutput{
 			DataInput: []chan string{
 				bp.sB.GameFileOutout,
 				bp.sB.DataOutput,
@@ -89,7 +89,7 @@ func (bp *BaseballPipeline) Start(output string) error {
 		bp.sO.Init()
 		go bp.sO.Run()
 	case "file":
-		bp.fO = &pipelineStage.FileOutput{
+		bp.fO = &pipelinestage.FileOutput{
 			DataInput: []chan string{
 				bp.sB.GameFileOutout,
 				bp.sB.DataOutput,
@@ -98,7 +98,7 @@ func (bp *BaseballPipeline) Start(output string) error {
 		bp.fO.Init()
 		go bp.fO.Run()
 	case "db":
-		bp.dbO = &pipelineStage.DatabaseOutput{
+		bp.dbO = &pipelinestage.DatabaseOutput{
 			DataInput: []chan string{
 				bp.sB.GameFileOutout,
 				bp.sB.DataOutput,
@@ -142,7 +142,7 @@ DateRange is the way in which we provide dates to the pipeline
 func (bp *BaseballPipeline) DateRange(beg, end string) error {
 	fmt.Printf("Using a date range of %s - %s\n", beg, end)
 
-	data := pipelineStage.DateInputParameters{Beg: beg, End: end}
+	data := pipelinestage.DateInputParameters{Beg: beg, End: end}
 	bp.dP.DataInput <- data
 
 	return nil

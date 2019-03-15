@@ -51,5 +51,7 @@ func main() {
 			fmt.Println(err)
 			return
 		}
+	} else {
+		fmt.Println("Please provide a date")
 	}
 }

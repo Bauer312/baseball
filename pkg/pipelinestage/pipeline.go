@@ -14,4 +14,14 @@
    limitations under the License.
 */
 
-package pipelineStage
+package pipelinestage
+
+/*
+Controller is the interface that defines the methods for controlling a pipeline
+*/
+type Controller interface {
+	Stop()
+	Init() error
+	Abort()
+	Run()
+}

@@ -10,10 +10,6 @@ This is a set of command line tools written in the Go language and licensed unde
     * -beg - the beginning date, in YYYYMMDD format (20170401)
     * -end - the ending date, in YYYYMMDD format (20170401)
 
-## Data
-
-Data is stored in a set of pipe-delimited text files that are located in "standard" locations.  On MacOS, that would be "~/Library/Application Support/com.13fpl.baseball/" and on Linux you will find them in "/var/lib/com.13fpl.baseball/".
-
 ### game.xml
 
 The game.xml file contains basic information about each game, such as the time and location of the game as well as the teams involved.  Included in this file is a MLB-provided "primary key" for that game.  For our primary key, we'll take that and the date.  There are 3 output files when game.xml is parsed:

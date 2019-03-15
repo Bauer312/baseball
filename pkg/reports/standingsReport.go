@@ -22,6 +22,7 @@ import (
 	"log"
 	"os"
 	"path"
+
 	//Make sure we can use Postgres
 	_ "github.com/lib/pq"
 )
