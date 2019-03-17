@@ -1,5 +1,5 @@
 /*
-	Copyright 2017 Brian Bauer
+	Copyright 2019 Brian Bauer
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ package dateslice
 import (
 	"fmt"
 	"math"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -64,28 +66,32 @@ func aWeek(baseDate time.Time) []time.Time {
 }
 
 /*
-WeekOf returns a slice containing all dates that occur during this specific week (Sunday is the first day of the week in Go!)
+WeekOf returns a slice containing all dates that occur during this specific week
+	(Sunday is the first day of the week in Go!)
 */
 func WeekOf(date time.Time) []time.Time {
 	return aWeek(date)
 }
 
 /*
-ThisWeek returns a slice containing all dates that occur this week (Sunday is the first day of the week in Go!)
+ThisWeek returns a slice containing all dates that occur this week
+	(Sunday is the first day of the week in Go!)
 */
 func ThisWeek() []time.Time {
 	return aWeek(time.Now())
 }
 
 /*
-LastWeek returns a slice containing all dates that occured last week (Sunday is the first day of the week in Go!)
+LastWeek returns a slice containing all dates that occured last week
+	(Sunday is the first day of the week in Go!)
 */
 func LastWeek() []time.Time {
 	return aWeek(time.Now().AddDate(0, 0, -7))
 }
 
 /*
-NextWeek returns a slice containing all dates that will occur next week (Sunday is the first day of the week in Go!)
+NextWeek returns a slice containing all dates that will occur next week
+	(Sunday is the first day of the week in Go!)
 */
 func NextWeek() []time.Time {
 	return aWeek(time.Now().AddDate(0, 0, 7))
@@ -172,6 +178,38 @@ RangeString transforms a beginning and ending date from strings into dates and t
 	the results of the Range function
 */
 func RangeString(begDt, endDt string) []time.Time {
+	if len(begDt) == 6 {
+		//Treat this as the beginning of a month
+		begDt += "01"
+	}
+	if len(begDt) == 4 {
+		//Treat this as the beginning of a year
+		begDt += "0101"
+	}
+	if len(endDt) == 6 {
+		//Treat this as the end of a month
+		endDt += "01"
+
+		temp, err := time.Parse("20060102", endDt)
+		if err != nil {
+			fmt.Println(err)
+		}
+		temp = temp.AddDate(0, 1, 0)
+		temp = temp.AddDate(0, 0, -1)
+		endDt = temp.Format("20060102")
+	}
+	if len(endDt) == 4 {
+		//Treat this as the end of a month
+		endDt += "0101"
+
+		temp, err := time.Parse("20060102", endDt)
+		if err != nil {
+			fmt.Println(err)
+		}
+		temp = temp.AddDate(1, 0, 0)
+		temp = temp.AddDate(0, 0, -1)
+		endDt = temp.Format("20060102")
+	}
 	beg, err := time.Parse("20060102", begDt)
 	if err != nil {
 		fmt.Println(err)
@@ -188,21 +226,18 @@ DateStringToSlice returns a slice of dates corresponding to the text in a string
 */
 func DateStringToSlice(dateText string) []time.Time {
 	var ds []time.Time
-	switch dateText {
-	case "today":
+	if strings.EqualFold(dateText, "today") {
 		ds = Today()
-	case "yesterday":
+	} else if strings.EqualFold(dateText, "yesterday") {
 		ds = Yesterday()
-	case "thisweek":
+	} else if strings.EqualFold(dateText, "thisweek") {
 		ds = ThisWeek()
-	case "lastweek":
+	} else if strings.EqualFold(dateText, "lastweek") {
 		ds = LastWeek()
-	case "thismonth":
+	} else if strings.EqualFold(dateText, "thismonth") {
 		ds = ThisMonth()
-	case "lastmonth":
+	} else if strings.EqualFold(dateText, "lastmonth") {
 		ds = LastMonth()
-	default:
-		fmt.Println("Please use a word, such as 'today' or 'lastmonth'.")
 	}
 	return ds
 }
@@ -210,8 +245,7 @@ func DateStringToSlice(dateText string) []time.Time {
 /*
 DateObjectsToSlice returns a slice of dates based upon the contents of 3 flags
 */
-func DateObjectsToSlice(dateString, begDt, endDt string) []time.Time {
-	var ds []time.Time
+func DateObjectsToSlice(dateString, begDt, endDt string) (ds []time.Time) {
 	if len(dateString) != 0 {
 		ds = DateStringToSlice(dateString)
 	}
@@ -223,5 +257,31 @@ func DateObjectsToSlice(dateString, begDt, endDt string) []time.Time {
 			ds = RangeString(begDt, begDt)
 		}
 	}
-	return ds
+	return
+}
+
+/*
+ParseDate tries to figure out what is being asked for
+*/
+func ParseDate(dateString, rangeType string) (ds []time.Time) {
+	switch rangeType {
+	case "daily":
+		if strings.EqualFold(dateString, "today") {
+			ds = Today()
+		} else if strings.EqualFold(dateString, "yesterday") {
+			ds = Yesterday()
+		} else if _, err := strconv.Atoi(dateString); err == nil {
+			ds = RangeString(dateString, dateString)
+		}
+	case "weekly":
+		if strings.EqualFold(dateString, "current") {
+			ds = ThisWeek()
+		} else if strings.EqualFold(dateString, "last") {
+			ds = LastWeek()
+		} else if _, err := strconv.Atoi(dateString); err == nil {
+
+		}
+	case "monthly":
+	}
+	return
 }
