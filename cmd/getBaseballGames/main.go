@@ -19,9 +19,13 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net/http"
+	"sync"
 	"time"
 
+	"github.com/bauer312/baseball/pkg/datepath"
 	"github.com/bauer312/baseball/pkg/dateslice"
+	"github.com/bauer312/baseball/pkg/filepath"
 )
 
 func main() {
@@ -29,6 +33,7 @@ func main() {
 	start := flag.String("start", "", "Retreive data for a date range (YYYYMMDD)")
 	end := flag.String("end", "", "Retreive data for a date range (YYYYMMDD)")
 	output := flag.String("output", "~/baseball", "Output location for downloaded files")
+	url := flag.String("url", "http://gd2.mlb.com", "Source location of data to download")
 
 	flag.Parse()
 
@@ -44,7 +49,44 @@ func main() {
 		}
 	}
 
+	client := http.Client{Timeout: (10 * time.Second)}
+	var datePaths datepath.DatePath
+
+	datePaths.Init()
+	go datePaths.ChannelListener(&client)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	go printFilePath(&wg, datePaths.FilePath, *output)
+
 	for i, dt := range dates {
-		fmt.Printf("Downloading data for [%d] %s\n", i+1, dt.Format("20060102"))
+		fmt.Printf("Downloading data for [%d] %s (%s)\n",
+			i+1, dt.Format("20060102"), dateToPath(*url, dt))
+		datePaths.DatePath <- dateToPath(*url, dt)
 	}
+
+	datePaths.Done()
+
+	wg.Wait()
+}
+
+func dateToPath(baseURL string, date time.Time) string {
+	year := date.Year()
+	month := date.Month()
+	day := date.Day()
+	return fmt.Sprintf("%s/components/game/mlb/year_%04d/month_%02d/day_%02d", baseURL, year, month, day)
+}
+
+func printFilePath(wg *sync.WaitGroup, paths chan string, output string) {
+	client := http.Client{Timeout: (10 * time.Second)}
+	var filePaths filepath.FilePath
+	filePaths.Init(output)
+	go filePaths.ChannelListener(&client)
+	for path := range paths {
+		//fmt.Printf("\t%s\n", path)
+		filePaths.FilePath <- path
+	}
+	filePaths.Done()
+	wg.Done()
 }
