@@ -90,10 +90,10 @@ func (fP *DatePath) tokenize(dataPath string, resp *http.Response) {
 							}
 
 							fP.FilePath <- gidPath + "bis_boxscore.xml"
-							//fP.FilePath <- gidPath + "game.xml"
-							//fP.FilePath <- gidPath + "game_events.xml"
-							//fP.FilePath <- gidPath + "inning/inning_all.xml"
-							//fP.FilePath <- gidPath + "inning/inning_hit.xml"
+							fP.FilePath <- gidPath + "game.xml"
+							fP.FilePath <- gidPath + "game_events.xml"
+							fP.FilePath <- gidPath + "inning/inning_all.xml"
+							fP.FilePath <- gidPath + "inning/inning_hit.xml"
 						}
 						break
 					}
