@@ -50,19 +50,22 @@ func (fP *FilePath) ChannelListener(client *http.Client) {
 		resp, err := client.Get(inputPath)
 		if err != nil {
 			fmt.Println(err.Error())
-		}
-		if i := strings.Index(inputPath, "gid_"); i >= 0 {
+		} else if i := strings.Index(inputPath, "gid_"); i >= 0 {
 			outputPath := filepath.Join(fP.basePath, strings.Replace(inputPath[i:], "/", "_", -1))
-			f, err := os.OpenFile(outputPath, os.O_CREATE|os.O_APPEND|os.O_RDWR, os.ModePerm)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-			defer f.Close()
-			resp.Write(f)
+			fP.writeFile(outputPath, resp)
 		}
 		fP.wg.Done()
 	}
+}
+
+func (fP *FilePath) writeFile(filePath string, resp *http.Response) {
+	f, err := os.OpenFile(filePath, os.O_CREATE|os.O_APPEND|os.O_RDWR, os.ModePerm)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer f.Close()
+	resp.Write(f)
 }
 
 /*
