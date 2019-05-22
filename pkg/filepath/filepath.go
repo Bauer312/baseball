@@ -77,7 +77,10 @@ func (fP *FilePath) Init(output string) {
 	if err != nil {
 		fmt.Println("Unable to determine user storage location")
 	}
-	fP.basePath = filepath.Join(usr.HomeDir, "baseball/gameday/raw/")
+	if len(output) == 0 {
+		output = usr.HomeDir
+	}
+	fP.basePath = filepath.Join(output, "baseball/gameday/raw/")
 	err = os.MkdirAll(fP.basePath, 0740)
 	if err != nil {
 		fmt.Println("Unable to validate storage location")
