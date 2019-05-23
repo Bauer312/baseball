@@ -46,7 +46,7 @@ func (fP *FilePath) ChannelListener(client *http.Client) {
 	for inputPath := range fP.FilePath {
 		fmt.Printf("\tRequesting %s\n", inputPath)
 		fP.wg.Add(1)
-		time.Sleep(2 * time.Second)
+		time.Sleep(4 * time.Second)
 		resp, err := client.Get(inputPath)
 		if err != nil {
 			fmt.Println(err.Error())
