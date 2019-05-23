@@ -49,7 +49,7 @@ func main() {
 		}
 	}
 
-	client := http.Client{Timeout: (30 * time.Second)}
+	client := http.Client{Timeout: (45 * time.Second)}
 	var datePaths datepath.DatePath
 
 	datePaths.Init()
@@ -79,7 +79,7 @@ func dateToPath(baseURL string, date time.Time) string {
 }
 
 func printFilePath(wg *sync.WaitGroup, paths chan string, output string) {
-	client := http.Client{Timeout: (10 * time.Second)}
+	client := http.Client{Timeout: (45 * time.Second)}
 	var filePaths filepath.FilePath
 	filePaths.Init(output)
 	go filePaths.ChannelListener(&client)
