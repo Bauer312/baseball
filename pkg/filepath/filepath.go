@@ -85,6 +85,7 @@ func (fP *FilePath) Init(output string) {
 	if err != nil {
 		fmt.Println("Unable to validate storage location")
 	}
+	fmt.Printf("Storage Location: %s\n", fP.basePath)
 }
 
 /*

@@ -49,7 +49,7 @@ func main() {
 		}
 	}
 
-	client := http.Client{Timeout: (10 * time.Second)}
+	client := http.Client{Timeout: (30 * time.Second)}
 	var datePaths datepath.DatePath
 
 	datePaths.Init()
