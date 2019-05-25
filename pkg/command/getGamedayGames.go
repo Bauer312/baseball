@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-package main
+package command
 
 import (
 	"flag"
@@ -28,7 +28,10 @@ import (
 	"github.com/bauer312/baseball/pkg/filepath"
 )
 
-func main() {
+/*
+MainGameday retrieves gameday files from the legacy MLB site
+*/
+func MainGameday() {
 	date := flag.String("date", "yesterday", "Retreive data for a specific date (default is yesterday)")
 	start := flag.String("start", "", "Retreive data for a date range (YYYYMMDD)")
 	end := flag.String("end", "", "Retreive data for a date range (YYYYMMDD)")

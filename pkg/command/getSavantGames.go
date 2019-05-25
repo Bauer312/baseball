@@ -1,4 +1,4 @@
-package main
+package command
 
 import (
 	"flag"
@@ -13,42 +13,67 @@ import (
 	"github.com/bauer312/baseball/pkg/dateslice"
 )
 
-func main() {
-	date := flag.String("date", "yesterday", "Retreive data for a specific date (default is yesterday)")
-	start := flag.String("start", "", "Retreive data for a date range (YYYYMMDD)")
-	end := flag.String("end", "", "Retreive data for a date range (YYYYMMDD)")
-	output := flag.String("output", "", "Output location for downloaded files")
-	url := flag.String("url", "https://baseballsavant.mlb.com", "Source location of data to download")
+/*
+GetSavantGames contains information used to get the Baseball Savant
+	data from the Baseball Savant website
+*/
+type GetSavantGames struct {
+	date   string
+	start  string
+	end    string
+	output string
+	url    string
+}
 
-	flag.Parse()
+/*
+SetFlags creates the flags that are needed for this functionality
+*/
+func (gsg *GetSavantGames) SetFlags(fs *flag.FlagSet, cmdMap map[string]*string) {
+	cmdMap["date"] = fs.String("date", "yesterday", "Retreive data for a specific date (default is yesterday)")
+	cmdMap["start"] = fs.String("start", "", "Retreive data for a date range (YYYYMMDD)")
+	cmdMap["end"] = fs.String("end", "", "Retreive data for a date range (YYYYMMDD)")
+	cmdMap["output"] = fs.String("output", "", "Output location for downloaded files")
+	cmdMap["url"] = fs.String("url", "https://baseballsavant.mlb.com", "Source location of data to download")
+
+}
+
+/*
+Execute runs the functionality that produces the data needed
+*/
+func (gsg *GetSavantGames) Execute(cmdMap map[string]*string) {
+	gsg.date = *cmdMap["date"]
+	gsg.start = *cmdMap["start"]
+	gsg.end = *cmdMap["end"]
+	gsg.output = *cmdMap["output"]
+	gsg.url = *cmdMap["url"]
 
 	var dates []time.Time
-	if len(*start) > 0 {
-		dates = dateslice.DateObjectsToSlice("", *start, *end)
+	if len(gsg.start) > 0 {
+		dates = dateslice.DateObjectsToSlice("", gsg.start, gsg.end)
 	} else {
-		dates = dateslice.DateStringToSlice(*date)
+		dates = dateslice.DateStringToSlice(gsg.date)
 		if len(dates) == 0 {
-			dates = dateslice.DateObjectsToSlice("", *date, *date)
+			dates = dateslice.DateObjectsToSlice("", gsg.date, gsg.date)
 		}
 	}
 
-	fullOutputPath := validateOutput(*output)
+	fullOutputPath := validateOutput(gsg.output)
 
 	for i, dt := range dates {
-		targetURL := dateToPath(*url, dt)
+		targetURL := savantdateToPath(gsg.url, dt)
 		fmt.Printf("Downloading data for [%d] %s (%s)\n", i+1, dt.Format("20060102"), targetURL)
-		downloadFile(targetURL, filepath.Join(fullOutputPath, dt.Format("20060102")+".csv"))
+		savantdownloadFile(targetURL, filepath.Join(fullOutputPath, dt.Format("20060102")+".csv"))
 	}
 }
 
-func dateToPath(baseURL string, date time.Time) string {
+func savantdateToPath(baseURL string, date time.Time) string {
 	year := date.Year()
 	month := date.Month()
 	day := date.Day()
 	return fmt.Sprintf("%s/statcast_search/csv?all=true&hfPT=&hfAB=&hfBBT=&hfPR=&hfZ=&stadium=&hfBBL=&hfNewZones=&hfGT=R|&hfC=&hfSea=%04d|&hfSit=&player_type=pitcher&hfOuts=&opponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=%04d-%02d-%02d&game_date_lt=%04d-%02d-%02d&hfInfield=&team=&position=&hfOutfield=&hfRO=&home_road=&hfFlag=&hfPull=&metric_1=&hfInn=&min_pitches=0&min_results=0&group_by=name&sort_col=pitches&player_event_sort=h_launch_speed&sort_order=desc&min_pas=0&type=details&", baseURL, year, year, month, day, year, month, day)
 }
 
-func downloadFile(url, target string) {
+func savantdownloadFile(url, target string) {
 	fmt.Printf("Target: %s\n", target)
 	client := http.Client{Timeout: (45 * time.Second)}
 	resp, err := client.Get(url)
