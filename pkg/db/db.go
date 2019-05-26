@@ -126,8 +126,8 @@ func (bdb *BaseballDB) ConfirmSavantMaster() error {
 		away_score integer,
 		bat_score integer,
 		fld_score integer,
-		post_home_score integer,
 		post_away_score integer,
+		post_home_score integer,
 		post_bat_score integer,
 		if_fielding_alignment text,
 		of_fielding_alignment text);
