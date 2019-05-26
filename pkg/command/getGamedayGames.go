@@ -29,26 +29,46 @@ import (
 )
 
 /*
-MainGameday retrieves gameday files from the legacy MLB site
+GetGamedayGames contains information used to get the gameday
+	data from the MLB website
 */
-func MainGameday() {
-	date := flag.String("date", "yesterday", "Retreive data for a specific date (default is yesterday)")
-	start := flag.String("start", "", "Retreive data for a date range (YYYYMMDD)")
-	end := flag.String("end", "", "Retreive data for a date range (YYYYMMDD)")
-	output := flag.String("output", "~/baseball", "Output location for downloaded files")
-	url := flag.String("url", "http://gd2.mlb.com", "Source location of data to download")
+type GetGamedayGames struct {
+	date   string
+	start  string
+	end    string
+	output string
+	url    string
+}
 
-	flag.Parse()
+/*
+SetFlags creates the flags that are needed for this functionality
+*/
+func (ggg *GetGamedayGames) SetFlags(fs *flag.FlagSet, cmdMap map[string]*string) {
+	cmdMap["date"] = fs.String("date", "yesterday", "Retreive data for a specific date (default is yesterday)")
+	cmdMap["start"] = fs.String("start", "", "Retreive data for a date range (YYYYMMDD)")
+	cmdMap["end"] = fs.String("end", "", "Retreive data for a date range (YYYYMMDD)")
+	cmdMap["output"] = fs.String("output", "", "Output location for downloaded files")
+	cmdMap["url"] = fs.String("url", "http://gd2.mlb.com", "Source location of data to download")
 
-	fmt.Printf("Raw data will be saved in %s\n", *output)
+}
+
+/*
+Execute runs the functionality that produces the data needed
+*/
+func (ggg *GetGamedayGames) Execute(cmdMap map[string]*string) {
+	ggg.date = *cmdMap["date"]
+	ggg.start = *cmdMap["start"]
+	ggg.end = *cmdMap["end"]
+	ggg.output = *cmdMap["output"]
+	ggg.url = *cmdMap["url"]
 
 	var dates []time.Time
-	if len(*start) > 0 {
-		dates = dateslice.DateObjectsToSlice("", *start, *end)
+	if len(ggg.start) > 0 {
+		dates = dateslice.DateObjectsToSlice("", ggg.start, ggg.end)
 	} else {
-		dates = dateslice.DateStringToSlice(*date)
+		dates = dateslice.DateStringToSlice(ggg.date)
 		if len(dates) == 0 {
-			dates = dateslice.DateObjectsToSlice("", *date, *date)
+			dates = dateslice.DateObjectsToSlice("", ggg.date, ggg.date)
 		}
 	}
 
@@ -61,12 +81,12 @@ func MainGameday() {
 	var wg sync.WaitGroup
 	wg.Add(1)
 
-	go printFilePath(&wg, datePaths.FilePath, *output)
+	go printFilePath(&wg, datePaths.FilePath, ggg.output)
 
 	for i, dt := range dates {
 		fmt.Printf("Downloading data for [%d] %s (%s)\n",
-			i+1, dt.Format("20060102"), dateToPath(*url, dt))
-		datePaths.DatePath <- dateToPath(*url, dt)
+			i+1, dt.Format("20060102"), dateToPath(ggg.url, dt))
+		datePaths.DatePath <- dateToPath(ggg.url, dt)
 	}
 
 	datePaths.Done()
