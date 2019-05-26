@@ -44,11 +44,6 @@ func (ewl *LoadSavantData) Execute(cmdMap map[string]*string) {
 	}
 	defer bbdb.Close()
 
-	err = bbdb.DropSavantTable()
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	err = bbdb.ConfirmSavantMaster()
 	if err != nil {
 		log.Fatal(err)
