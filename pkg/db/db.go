@@ -19,6 +19,7 @@ package db
 import (
 	"database/sql"
 	"encoding/csv"
+	"encoding/xml"
 	"fmt"
 	"io"
 	"log"
@@ -302,4 +303,227 @@ DropSavantTable gets rid of the table if it exists
 func (bdb *BaseballDB) DropSavantTable() error {
 	_, err := bdb.dbConn.Exec("drop table if exists mlb_savant;")
 	return err
+}
+
+/*
+ConfirmGamedayMaster makes sure that the table is present.  If not, create it.
+*/
+func (bdb *BaseballDB) ConfirmGamedayMaster() error {
+	_, err := bdb.dbConn.Exec(`create table if not exists mlb_gameday (
+		game_date date,
+		away_team text,
+		home_team text,
+		game_number integer,
+		inning integer,
+		at_bat_number integer,
+		at_bat_start_tfs integer,
+		at_bat_start_tfs_zulu timestamp with time zone,
+		at_bat_end_tfs_zulu timestamp with time zone,
+		pitch_number integer,
+		sv_id text,
+		pitch_tfs integer,
+		pitch_tfs_zulu timestamp with time zone);
+		`)
+	return err
+}
+
+/*
+DropGamedayTable gets rid of the table if it exists
+*/
+func (bdb *BaseballDB) DropGamedayTable() error {
+	_, err := bdb.dbConn.Exec("drop table if exists mlb_gameday;")
+	return err
+}
+
+/*
+<pitch
+break_angle="38.4"
+break_length="4.8"
+break_y="24.0"
+cc=""
+code="B"
+des="Ball"
+des_es="In play, out(s)"
+end_speed="84.1"
+event_num="2"
+id="2"
+mt=""
+nasty=""
+pitch_type="FF"
+play_guid="28c604b5-9faf-43db-b371-7535480c9a4e"
+spin_dir="placeholder"
+spin_rate="placeholder"
+start_speed="92.5"
+*/
+
+/*
+PitchXML represents a pitch
+*/
+type PitchXML struct {
+	SVID           string `xml:"sv_id,attr"`
+	TFS            string `xml:"tfs,attr"`
+	TFSZulu        string `xml:"tfs_zulu,attr"`
+	X              string `xml:"x,attr"`
+	Y              string `xml:"y,attr"`
+	X0             string `xml:"x0,attr"`
+	Y0             string `xml:"y0,attr"`
+	Z0             string `xml:"z0,attr"`
+	VX0            string `xml:"vx0,attr"`
+	VY0            string `xml:"vy0,attr"`
+	VZ0            string `xml:"vz0,attr"`
+	AX0            string `xml:"ax0,attr"`
+	AY0            string `xml:"ay0,attr"`
+	AZ0            string `xml:"az0,attr"`
+	PX             string `xml:"px,attr"`
+	PZ             string `xml:"pz,attr"`
+	PFXX           string `xml:"pfx_x,attr"`
+	PFXZ           string `xml:"pfx_z,attr"`
+	Type           string `xml:"type,attr"`
+	TypeConfidence string `xml:"type_confidence"`
+	Zone           string `xml:"zone,attr"`
+	SZTop          string `xml:"sz_top,attr"`
+	SZBot          string `xml:"sz_bot,attr"`
+}
+
+/*
+AtBatXML represents an at bat
+*/
+type AtBatXML struct {
+	PlayNumber       int        `xml:"num,attr"`
+	PlayGUID         string     `xml:"play_guid,attr"`
+	AwayTeamRuns     int        `xml:"away_team_runs,attr"`
+	HomeTeamRuns     int        `xml:"home_team_runs,attr"`
+	Balls            int        `xml:"b,attr"`
+	Strikes          int        `xml:"s,attr"`
+	Outs             int        `xml:"o,attr"`
+	BatterID         int        `xml:"batter,attr"`
+	BatterHeight     string     `xml:"b_height,attr"`
+	BatterSide       string     `xml:"stand,attr"`
+	PitcherID        int        `xml:"pitcher,attr"`
+	PitcherSide      string     `xml:"p_throws,attr"`
+	EnglishDesc      string     `xml:"des,attr"`
+	SpanishDesc      string     `xml:"des_es,attr"`
+	EnglishEventDesc string     `xml:"event,attr"`
+	SpanishEventDesc string     `xml:"event_es,attr"`
+	EventNumber      int        `xml:"event_num,attr"`
+	StartTFSZulu     string     `xml:"start_tfs_zulu,attr"`
+	EndTFSZulu       string     `xml:"end_tfs_zulu,attr"`
+	StartTFS         string     `xml:"start_tfs,attr"`
+	Pitches          []PitchXML `xml:"pitch"`
+}
+
+/*
+HalfInningXML represents a half inning
+*/
+type HalfInningXML struct {
+	AtBats []AtBatXML `xml:"atbat"`
+}
+
+/*
+InningXML represents an inning
+*/
+type InningXML struct {
+	AwayTeam string        `xml:"away_team,attr"`
+	HomeTeam string        `xml:"home_team,attr"`
+	Next     string        `xml:"next,attr"`
+	Num      int           `xml:"num,attr"`
+	Top      HalfInningXML `xml:"top"`
+	Bottom   HalfInningXML `xml:"bottom"`
+}
+
+/*
+GameXML is the highest level in the xml file
+*/
+type GameXML struct {
+	AtBat   int         `xml:"atBat,attr"`
+	Deck    int         `xml:"deck,attr"`
+	Hole    int         `xml:"hole,attr"`
+	Ind     string      `xml:"ind,attr"`
+	Innings []InningXML `xml:"inning"`
+}
+
+/*
+LoadGamedayXML takes an XML file and bulk loads it into the database
+*/
+func (bdb *BaseballDB) LoadGamedayXML(f string) error {
+	fp, err := os.Open(f)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer fp.Close()
+
+	fileComponents := strings.Split(f, "_")
+	gY := fileComponents[1]
+	gM := fileComponents[2]
+	gD := fileComponents[3]
+	gN := fileComponents[6]
+
+	var g GameXML
+	decoder := xml.NewDecoder(fp)
+	err = decoder.Decode(&g)
+	if err != nil {
+		return err
+	}
+
+	txn, err := bdb.dbConn.Begin()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	stmt, err := txn.Prepare(pq.CopyIn("mlb_gameday",
+		"game_date", "away_team", "home_team", "game_number",
+		"inning", "at_bat_number", "at_bat_start_tfs",
+		"at_bat_start_tfs_zulu", "at_bat_end_tfs_zulu",
+		"pitch_number", "sv_id", "pitch_tfs",
+		"pitch_tfs_zulu"))
+	if err != nil {
+		return err
+	}
+
+	atBatNum := 0
+	for _, inning := range g.Innings {
+		for _, atbat := range inning.Top.AtBats {
+			atBatNum++
+			for pitchnum, pitch := range atbat.Pitches {
+				gameDate := fmt.Sprintf("%s-%s-%s", gY, gM, gD)
+				_, err = stmt.Exec(gameDate, strings.ToUpper(inning.AwayTeam),
+					strings.ToUpper(inning.HomeTeam), gN, inning.Num,
+					atBatNum, atbat.StartTFS, atbat.StartTFSZulu, atbat.EndTFSZulu,
+					pitchnum+1, pitch.SVID, pitch.TFS, pitch.TFSZulu)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		for _, atbat := range inning.Bottom.AtBats {
+			atBatNum++
+			for pitchnum, pitch := range atbat.Pitches {
+				gameDate := fmt.Sprintf("%s-%s-%s", gY, gM, gD)
+				_, err = stmt.Exec(gameDate, strings.ToUpper(inning.AwayTeam),
+					strings.ToUpper(inning.HomeTeam), gN, inning.Num,
+					atBatNum, atbat.StartTFS, atbat.StartTFSZulu, atbat.EndTFSZulu,
+					pitchnum+1, pitch.SVID, pitch.TFS, pitch.TFSZulu)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	_, err = stmt.Exec()
+	if err != nil {
+		return err
+	}
+
+	err = stmt.Close()
+	if err != nil {
+		return err
+	}
+
+	err = txn.Commit()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
