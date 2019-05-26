@@ -41,7 +41,7 @@ func (ewl *ExtractWeatherLink) Execute(cmdMap map[string]*string) {
 		log.Fatal(err)
 	}
 
-	outputFile := filepath.Join(ewl.outputDir, "savant-import.sql")
+	outputFile := filepath.Join(ewl.outputDir, "savant-import.dat")
 	ofp, err := os.Create(outputFile)
 	if err != nil {
 		log.Fatal(err)

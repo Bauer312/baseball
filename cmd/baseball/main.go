@@ -25,7 +25,8 @@ func main() {
 			command.MainGameday()
 		case "weather":
 			cmdStruct = &command.ExtractWeatherLink{}
-
+		case "loadsavant":
+			cmdStruct = &command.LoadSavantData{}
 		default:
 			printCommands()
 			return
@@ -48,4 +49,5 @@ func printCommands() {
 	fmt.Println("\tsavant")
 	fmt.Println("\tgameday")
 	fmt.Println("\tweather")
+	fmt.Println("\tloadsavant")
 }
