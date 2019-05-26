@@ -183,8 +183,8 @@ func (bdb *BaseballDB) LoadSavantCSV(f string) error {
 		"estimated_woba_using_speedangle", "woba_value",
 		"woba_denom", "babip_value", "iso_value", "launch_speed_angle",
 		"at_bat_number", "pitch_number", "pitch_name", "home_score",
-		"away_score", "bat_score", "fld_score", "post_home_score",
-		"post_away_score", "post_bat_score", "if_fielding_alignment",
+		"away_score", "bat_score", "fld_score", "post_away_score",
+		"post_home_score", "post_bat_score", "if_fielding_alignment",
 		"of_fielding_alignment"))
 	if err != nil {
 		return err
