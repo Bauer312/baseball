@@ -7,3 +7,17 @@ This is a command line tool written in the Go language and licensed under the Ap
 
 ## Baseball
 This tool downloads or processes data for you.  MLB has two data sites, Savant (the newest) and Gameday.  Specify which you want to pull data from along with information about desired dates and where you'd like the data to be stored.
+
+- baseball
+    - savant
+        - date (a single date)
+        - start (the beginning of a date range)
+        - end (the end of a date range)
+        - output (the directory for storing downloaded data)
+        - url (override the default url for sourcing data)
+    - gameday
+        - date (a single date)
+        - start (the beginning of a date range)
+        - end (the end of a date range)
+        - output (the directory for storing downloaded data)
+        - url (override the default url for sourcing data)
